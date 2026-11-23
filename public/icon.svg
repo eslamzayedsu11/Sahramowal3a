@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#351344"/>
+      <stop offset="65%" stop-color="#1A0922"/>
+      <stop offset="100%" stop-color="#14081A"/>
+    </radialGradient>
+    <linearGradient id="flameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF7A3D"/>
+      <stop offset="55%" stop-color="#FF4D8D"/>
+      <stop offset="100%" stop-color="#B91C63"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bgGlow)"/>
+  <circle cx="256" cy="256" r="196" fill="none" stroke="#F4E8D8" stroke-opacity="0.14" stroke-width="4" stroke-dasharray="10 10"/>
+  <!-- Outer Flame -->
+  <path d="M266 78 C294 148, 374 198, 374 294 C374 374, 320 434, 256 434 C186 434, 138 376, 138 302 C138 238, 186 190, 214 156 C218 190, 236 208, 244 208 C228 164, 244 114, 266 78 Z" fill="url(#flameGrad)"/>
+  <!-- Inner Heart in Candle Cream -->
+  <path d="M256 382 L245 372 C207 338, 182 316, 182 287 C182 264, 200 246, 223 246 C236 246, 248 252, 256 262 C264 252, 276 246, 289 246 C312 246, 330 264, 330 287 C330 316, 305 338, 267 372 Z" fill="#F4E8D8"/>
+</svg>

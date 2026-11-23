@@ -1,0 +1,178 @@
+import { AnimatePresence, motion } from 'motion/react';
+import { Flame, Volume2, VolumeX, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type { CoupleNames } from '../types';
+import { playTapSound } from '../utils/sound';
+import { PWAInstallBanner } from './PWAInstallBanner';
+
+interface SettingsModalProps {
+  open: boolean;
+  names: CoupleNames;
+  candleMode: boolean;
+  sfxEnabled: boolean;
+  onClose: () => void;
+  onSaveNames: (names: CoupleNames) => void;
+  onToggleCandleMode: () => void;
+  onToggleSfx: () => void;
+}
+
+export function SettingsModal({
+  open,
+  names,
+  candleMode,
+  sfxEnabled,
+  onClose,
+  onSaveNames,
+  onToggleCandleMode,
+  onToggleSfx,
+}: SettingsModalProps) {
+  const [p1, setP1] = useState(names.partner1);
+  const [p2, setP2] = useState(names.partner2);
+
+  useEffect(() => {
+    setP1(names.partner1);
+    setP2(names.partner2);
+  }, [names.partner1, names.partner2, open]);
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    playTapSound();
+    onSaveNames({ partner1: p1.trim(), partner2: p2.trim() });
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4 backdrop-blur-sm"
+        >
+          <motion.div
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 40, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-[#B98A9E]/30 bg-[#1B0A22] p-6 shadow-2xl text-[#F4E8D8] max-h-[90dvh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-calligraphy text-2xl font-bold">
+                إعدادات السهرة
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  playTapSound();
+                  onClose();
+                }}
+                aria-label="إغلاق"
+                className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-[#B98A9E] hover:text-[#F4E8D8] cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSave} className="space-y-4 mb-5">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-[#B98A9E] mb-1">
+                    الاسم الأول
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={24}
+                    value={p1}
+                    onChange={(e) => setP1(e.target.value)}
+                    placeholder="اختياري"
+                    className="w-full min-h-[42px] rounded-lg border border-[#B98A9E]/30 bg-[#120618] px-3 py-2 text-sm text-[#F4E8D8] focus:outline-none focus:border-[#FF4D8D]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-[#B98A9E] mb-1">
+                    الاسم الثاني
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={24}
+                    value={p2}
+                    onChange={(e) => setP2(e.target.value)}
+                    placeholder="اختياري"
+                    className="w-full min-h-[42px] rounded-lg border border-[#B98A9E]/30 bg-[#120618] px-3 py-2 text-sm text-[#F4E8D8] focus:outline-none focus:border-[#FF4D8D]"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full min-h-[44px] rounded-lg bg-[#F4E8D8] text-[#14081A] font-bold text-sm cursor-pointer"
+              >
+                حفظ الأسماء
+              </button>
+            </form>
+
+            <div className="space-y-2.5 pt-4 border-t border-[#B98A9E]/20">
+              {/* Candle Mode Toggle */}
+              <button
+                type="button"
+                onClick={() => {
+                  playTapSound();
+                  onToggleCandleMode();
+                }}
+                className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-[#B98A9E]/25 bg-[#120618] flex items-center justify-between cursor-pointer"
+              >
+                <span className="inline-flex items-center gap-2.5 text-sm font-medium">
+                  <Flame className="h-4 w-4 text-[#FF7A3D]" />
+                  <span>وضع الشمعة (إضاءة خافتة هادئة)</span>
+                </span>
+                <span
+                  className={`text-xs font-bold px-2.5 py-1 rounded ${
+                    candleMode
+                      ? 'bg-[#FF7A3D]/25 text-[#FF7A3D]'
+                      : 'bg-white/5 text-[#B98A9E]'
+                  }`}
+                >
+                  {candleMode ? 'مفعّل' : 'مغلق'}
+                </span>
+              </button>
+
+              {/* SFX Toggle */}
+              <button
+                type="button"
+                onClick={() => {
+                  onToggleSfx();
+                }}
+                className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-[#B98A9E]/25 bg-[#120618] flex items-center justify-between cursor-pointer"
+              >
+                <span className="inline-flex items-center gap-2.5 text-sm font-medium">
+                  {sfxEnabled ? (
+                    <Volume2 className="h-4 w-4 text-[#FF4D8D]" />
+                  ) : (
+                    <VolumeX className="h-4 w-4 text-[#B98A9E]" />
+                  )}
+                  <span>المؤثرات الصوتية</span>
+                </span>
+                <span
+                  className={`text-xs font-bold px-2.5 py-1 rounded ${
+                    sfxEnabled
+                      ? 'bg-[#FF4D8D]/25 text-[#FF4D8D]'
+                      : 'bg-white/5 text-[#B98A9E]'
+                  }`}
+                >
+                  {sfxEnabled ? 'مفعّلة' : 'مكتومة'}
+                </span>
+              </button>
+            </div>
+
+            <div className="mt-4">
+              <PWAInstallBanner compact />
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}

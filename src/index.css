@@ -1,0 +1,337 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-calligraphy: 'Aref Ruqaa', serif;
+    --font-neon: 'Lalezar', 'Cairo', sans-serif;
+    --font-sans: 'IBM Plex Sans Arabic', 'Cairo', sans-serif;
+    --plum: #14081A;
+    --neon-rose: #FF4D8D;
+    --ember: #FF7A3D;
+    --cream: #F4E8D8;
+    --mauve: #B98A9E;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    background-color: #14081A;
+    color: #F4E8D8;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: var(--font-sans);
+  }
+}
+
+.font-calligraphy {
+  font-family: var(--font-calligraphy);
+}
+
+.font-neon {
+  font-family: var(--font-neon);
+}
+
+.font-sans-ar {
+  font-family: var(--font-sans);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Subtle film grain texture */
+.film-grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+}
+
+/* Torn cream paper note texture & edge */
+.scrapbook-paper {
+  background-color: #F4E8D8;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(130, 82, 102, 0.06) 0px,
+      rgba(130, 82, 102, 0.06) 1px,
+      transparent 1px,
+      transparent 28px
+    ),
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.55) 0%, transparent 55%),
+    radial-gradient(circle at 86% 88%, rgba(214, 184, 152, 0.35) 0%, transparent 60%);
+  box-shadow:
+    0 20px 44px -14px rgba(0, 0, 0, 0.85),
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    inset 0 0 24px rgba(168, 120, 82, 0.14);
+}
+
+/* Torn bottom paper clip-path */
+.torn-edge-note {
+  clip-path: polygon(
+    0% 0%,
+    100% 0%,
+    100% 96%,
+    95% 98.5%,
+    90% 95.5%,
+    84% 99%,
+    78% 96%,
+    72% 98.5%,
+    65% 95.5%,
+    59% 99%,
+    52% 96%,
+    46% 98.5%,
+    39% 95.5%,
+    32% 99%,
+    25% 96%,
+    18% 98.5%,
+    11% 95.5%,
+    5% 98.5%,
+    0% 96%
+  );
+}
+
+/* Translucent washi tape strip */
+.washi-tape {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 77, 141, 0.48) 0%,
+    rgba(255, 122, 61, 0.42) 50%,
+    rgba(255, 77, 141, 0.46) 100%
+  );
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(2px);
+}
+
+.washi-tape-cream {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(244, 232, 216, 0.52),
+    rgba(244, 232, 216, 0.52) 6px,
+    rgba(185, 138, 158, 0.38) 6px,
+    rgba(185, 138, 158, 0.38) 12px
+  );
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* Neon sign tube effect */
+.neon-rose-text {
+  color: #FFE4EE;
+  text-shadow:
+    0 0 6px rgba(255, 77, 141, 0.9),
+    0 0 18px rgba(255, 77, 141, 0.65),
+    0 0 36px rgba(255, 122, 61, 0.45);
+}
+
+.neon-ember-box {
+  box-shadow:
+    0 0 12px rgba(255, 77, 141, 0.42),
+    0 0 30px -4px rgba(255, 122, 61, 0.35),
+    inset 0 0 14px rgba(255, 77, 141, 0.22);
+}
+
+/* Scrapbook Button System (Palette: Midnight Plum, Neon Rose, Ember, Candle Cream, Dusty Mauve) */
+.btn-skip-ticket {
+  background-color: rgba(244, 232, 216, 0.045);
+  border: 2px dashed rgba(244, 232, 216, 0.42);
+  color: #EBDAD7;
+  box-shadow: inset 0 0 0 3px rgba(20, 8, 26, 0.55), 0 8px 20px -10px rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+}
+
+.btn-skip-ticket:hover:not(:disabled) {
+  background-color: rgba(244, 232, 216, 0.095);
+  border-color: rgba(244, 232, 216, 0.72);
+  color: #F4E8D8;
+}
+
+.btn-next-locked {
+  background: linear-gradient(180deg, rgba(31, 11, 41, 0.85) 0%, rgba(16, 6, 22, 0.92) 100%);
+  border: 1.5px solid rgba(185, 138, 158, 0.34);
+  color: #B98A9E;
+  box-shadow: inset 0 1px 2px rgba(244, 232, 216, 0.08), 0 10px 24px -10px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(12px);
+  cursor: not-allowed;
+}
+
+.btn-next-locked.tension-ember {
+  border-color: rgba(255, 122, 61, 0.72);
+  color: #FF7A3D;
+  box-shadow:
+    inset 0 0 16px rgba(255, 122, 61, 0.16),
+    0 0 24px -4px rgba(255, 122, 61, 0.42);
+}
+
+.btn-primary-ember {
+  background: linear-gradient(110deg, #FF4D8D 0%, #FF7A3D 100%);
+  border: 1.5px solid rgba(244, 232, 216, 0.34);
+  color: #F4E8D8;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.28),
+    0 14px 32px -8px rgba(255, 77, 141, 0.58),
+    0 0 22px -6px rgba(255, 122, 61, 0.42);
+}
+
+.btn-primary-ember:hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 3px rgba(255, 255, 255, 0.38),
+    0 18px 36px -6px rgba(255, 77, 141, 0.72),
+    0 0 28px -4px rgba(255, 122, 61, 0.56);
+}
+
+/* 3D Polaroid flip utilities */
+.polaroid-3d-stage {
+  perspective: 1100px;
+}
+
+.polaroid-3d-card {
+  transform-style: preserve-3d;
+}
+
+.polaroid-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.polaroid-face-back {
+  transform: rotateY(180deg);
+}
+
+/* Shimmer sweep on primary buttons */
+@keyframes shimmerSweep {
+  0% {
+    transform: translateX(120%);
+  }
+  100% {
+    transform: translateX(-120%);
+  }
+}
+
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.26) 50%,
+    transparent 75%
+  );
+  transform: translateX(120%);
+  animation: shimmerSweep 3.4s infinite ease-in-out;
+  pointer-events: none;
+}
+
+/* Midnight Turntable CSS-only equalizer bars */
+@keyframes eqPulseA {
+  0%, 100% { transform: scaleY(0.28); }
+  50% { transform: scaleY(0.95); }
+}
+@keyframes eqPulseB {
+  0%, 100% { transform: scaleY(0.85); }
+  45% { transform: scaleY(0.32); }
+}
+@keyframes eqPulseC {
+  0%, 100% { transform: scaleY(0.42); }
+  60% { transform: scaleY(1); }
+}
+
+.turntable-eq-bar {
+  transform-origin: bottom center;
+  transform: scaleY(0.28);
+  transition: transform 0.25s ease;
+}
+
+.turntable-eq-playing .turntable-eq-bar:nth-child(1) {
+  animation: eqPulseA 0.72s ease-in-out infinite;
+}
+.turntable-eq-playing .turntable-eq-bar:nth-child(2) {
+  animation: eqPulseB 0.58s ease-in-out 0.1s infinite;
+}
+.turntable-eq-playing .turntable-eq-bar:nth-child(3) {
+  animation: eqPulseC 0.66s ease-in-out 0.05s infinite;
+}
+.turntable-eq-playing .turntable-eq-bar:nth-child(4) {
+  animation: eqPulseB 0.78s ease-in-out 0.18s infinite;
+}
+.turntable-eq-playing .turntable-eq-bar:nth-child(5) {
+  animation: eqPulseA 0.62s ease-in-out 0.12s infinite;
+}
+
+@keyframes turntableMarquee {
+  0%, 18% {
+    transform: translateX(0px);
+  }
+  45%, 65% {
+    transform: translateX(var(--marquee-delta, 0px));
+  }
+  92%, 100% {
+    transform: translateX(0px);
+  }
+}
+
+.turntable-marquee-active {
+  animation: turntableMarquee 9.5s ease-in-out infinite;
+}
+
+/* Candle Mode: warm amber/sepia low-glare atmosphere, zero bright flashes */
+.candle-mode {
+  filter: brightness(0.76) sepia(0.32) hue-rotate(-14deg) saturate(0.92);
+}
+
+.candle-mode .btn-shimmer::after {
+  animation: none !important;
+  opacity: 0 !important;
+}
+
+.candle-mode .neon-rose-text {
+  color: #F4E8D8;
+  text-shadow: 0 0 10px rgba(255, 122, 61, 0.45);
+}
+
+/* Tasteful keyboard shortcut hint chips */
+.kbd-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.45rem;
+  padding: 0 0.42rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(185, 138, 158, 0.38);
+  border-bottom-width: 2px;
+  background: rgba(20, 8, 26, 0.85);
+  color: #F4E8D8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* Subtle custom scrollbar for inner overflow fallback */
+.scrapbook-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.scrapbook-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrapbook-scroll::-webkit-scrollbar-thumb {
+  background: rgba(130, 82, 102, 0.35);
+  border-radius: 9999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .btn-shimmer::after,
+  .turntable-eq-playing .turntable-eq-bar,
+  .turntable-marquee-active {
+    animation: none !important;
+  }
+}

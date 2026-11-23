@@ -1,0 +1,33 @@
+{
+  "id": "/",
+  "name": "سهرة مولعة 🔥",
+  "short_name": "سهرة مولعة",
+  "description": "لعبة تحديات رومانسية راقية للمتزوجين فقط (+18) لإشعال أجواء الحب والشغف.",
+  "lang": "ar",
+  "dir": "rtl",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/",
+  "theme_color": "#14081A",
+  "background_color": "#14081A",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
