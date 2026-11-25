@@ -1,8 +1,52 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    function isValidChallenge(data) {
+      return data.keys().hasAll(['category', 'text', 'order', 'active', 'createdAt'])
+        && data.category in ['dal3', 'motaa', 'akher']
+        && data.text is string && data.text.size() <= 2000
+        && data.order is number
+        && data.active is bool
+        && data.createdAt is number
+        && (!('songs' in data) || (data.songs is list && data.songs.size() <= 50))
+        && (!('audioCategoryId' in data) || (data.audioCategoryId is string && data.audioCategoryId.size() <= 128))
+        && (!('audioVolume' in data) || (data.audioVolume is number && data.audioVolume >= 0 && data.audioVolume <= 1));
+    }
+
+    function isValidSongCategory(data) {
+      return data.keys().hasAll(['name', 'order', 'createdAt'])
+        && data.keys().hasOnly(['name', 'order', 'createdAt'])
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 80
+        && data.order is number
+        && data.createdAt is number;
+    }
+
+    function isValidSavedSong(data) {
+      return data.keys().hasAll(['categoryId', 'url', 'createdAt'])
+        && data.keys().hasOnly(['categoryId', 'url', 'title', 'createdAt'])
+        && data.categoryId is string && data.categoryId.size() >= 1 && data.categoryId.size() <= 128
+        && data.url is string && data.url.size() >= 8 && data.url.size() <= 2000
+        && (!('title' in data) || (data.title is string && data.title.size() <= 120))
+        && data.createdAt is number;
+    }
+
+    match /challenges/{challengeId} {
+      allow get: if true;
+      allow list: if resource.data.category in ['dal3', 'motaa', 'akher'];
+      allow create, update: if isValidChallenge(request.resource.data);
+      allow delete: if true;
+    }
+
+    match /songCategories/{categoryId} {
+      allow read: if true;
+      allow create, update: if isValidSongCategory(request.resource.data);
+      allow delete: if true;
+    }
+
+    match /savedSongs/{songId} {
+      allow read: if true;
+      allow create, update: if isValidSavedSong(request.resource.data);
+      allow delete: if true;
     }
   }
 }

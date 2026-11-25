@@ -25,6 +25,21 @@ type SongsListener = (songs: SavedSong[]) => void;
 const localCategoryListeners = new Set<CategoriesListener>();
 const localSongListeners = new Set<SongsListener>();
 
+function formatSongWriteError(err: unknown, fallback: string): Error {
+  const raw = err instanceof Error ? err.message : String(err ?? '');
+  const code = (err as { code?: string } | null)?.code ?? '';
+  if (
+    code.includes('permission-denied') ||
+    raw.includes('permission-denied') ||
+    raw.includes('Missing or insufficient permissions')
+  ) {
+    return new Error(
+      'صلاحيات Firestore لا تسمح بالكتابة حالياً — يرجى التأكد من نشر قواعد firestore.rules.'
+    );
+  }
+  return new Error(fallback);
+}
+
 function sortCategories(list: SongCategory[]): SongCategory[] {
   return [...list].sort((a, b) => {
     if (a.order !== b.order) return a.order - b.order;
@@ -178,7 +193,7 @@ export async function addSongCategory(name: string, order = 0): Promise<string> 
     try {
       handleFirestoreError(err, OperationType.CREATE, CATEGORIES_COLLECTION);
     } catch {
-      throw new Error('تعذر إنشاء قسم الأغاني. حاول مرة أخرى.');
+      throw formatSongWriteError(err, 'تعذر إنشاء قسم الأغاني. حاول مرة أخرى.');
     }
   }
 }
@@ -205,7 +220,7 @@ export async function renameSongCategory(id: string, name: string): Promise<void
         `${CATEGORIES_COLLECTION}/${id}`
       );
     } catch {
-      throw new Error('تعذر تعديل اسم القسم.');
+      throw formatSongWriteError(err, 'تعذر تعديل اسم القسم.');
     }
   }
 }
@@ -234,7 +249,7 @@ export async function deleteSongCategory(id: string): Promise<void> {
         `${CATEGORIES_COLLECTION}/${id}`
       );
     } catch {
-      throw new Error('تعذر حذف القسم والأغاني المرتبطة به.');
+      throw formatSongWriteError(err, 'تعذر حذف القسم والأغاني المرتبطة به.');
     }
   }
 }
@@ -273,7 +288,7 @@ export async function addSavedSong(input: {
     try {
       handleFirestoreError(err, OperationType.CREATE, SONGS_COLLECTION);
     } catch {
-      throw new Error('تعذر حفظ الأغنية. حاول مرة أخرى.');
+      throw formatSongWriteError(err, 'تعذر حفظ الأغنية. حاول مرة أخرى.');
     }
   }
 }
@@ -310,7 +325,7 @@ export async function updateSavedSong(
     try {
       handleFirestoreError(err, OperationType.UPDATE, `${SONGS_COLLECTION}/${id}`);
     } catch {
-      throw new Error('تعذر تحديث بيانات الأغنية.');
+      throw formatSongWriteError(err, 'تعذر تحديث بيانات الأغنية.');
     }
   }
 }
@@ -327,7 +342,7 @@ export async function deleteSavedSong(id: string): Promise<void> {
     try {
       handleFirestoreError(err, OperationType.DELETE, `${SONGS_COLLECTION}/${id}`);
     } catch {
-      throw new Error('تعذر حذف الأغنية.');
+      throw formatSongWriteError(err, 'تعذر حذف الأغنية.');
     }
   }
 }
