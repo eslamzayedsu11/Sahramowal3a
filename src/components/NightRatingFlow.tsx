@@ -114,8 +114,8 @@ export function NightRatingFlow({
 }: NightRatingFlowProps) {
   const prefersReducedMotion = useReducedMotion();
 
-  const savedName1 = names.partner1.trim();
-  const savedName2 = names.partner2.trim();
+  const savedName1 = names.boy.trim();
+  const savedName2 = names.girl.trim();
   const hasSavedName1 = savedName1.length > 0;
   const hasSavedName2 = savedName2.length > 0;
 
@@ -141,8 +141,8 @@ export function NightRatingFlow({
   const [displayR2, setDisplayR2] = useState(0);
   const [verdictReady, setVerdictReady] = useState(false);
 
-  const displayName1 = customName1.trim() || 'الطرف الأول';
-  const displayName2 = customName2.trim() || 'الطرف الثاني';
+  const displayName1 = customName1.trim() || 'الولد';
+  const displayName2 = customName2.trim() || 'البنت';
 
   const activeValue = step === 1 ? rating1 : rating2;
   const activeTier = useMemo(() => getRatingTier(activeValue), [activeValue]);
@@ -571,7 +571,7 @@ export function NightRatingFlow({
                       prefersReducedMotion
                         ? undefined
                         : isLegendaryActive
-                        ? { scale: [1.08, 1], filter: ['brightness(1.3)', 'brightness(1)'] }
+                        ? { scale: [1.08, 1] }
                         : isOverHundredActive
                         ? { scale: [1.05, 1] }
                         : { scale: [1.02, 1] }

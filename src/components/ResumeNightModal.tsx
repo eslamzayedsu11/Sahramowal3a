@@ -25,13 +25,15 @@ export function ResumeNightModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        transition={{ duration: 0.16 }}
         onClick={onClose}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/82 p-4"
       >
         <motion.div
-          initial={{ scale: 0.94, opacity: 0, rotateX: 8 }}
-          animate={{ scale: 1, opacity: 1, rotateX: 0 }}
-          exit={{ scale: 0.94, opacity: 0 }}
+          initial={{ scale: 0.96, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.96, opacity: 0 }}
+          transition={{ duration: 0.16 }}
           onClick={(e) => e.stopPropagation()}
           className="scrapbook-paper torn-edge-note w-full max-w-sm px-6 pt-8 pb-10 text-center text-[#1B0A22]"
         >

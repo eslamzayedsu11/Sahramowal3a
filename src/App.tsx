@@ -12,7 +12,6 @@ import { MissingEnvScreen } from './components/MissingEnvScreen';
 import { ResumeNightModal } from './components/ResumeNightModal';
 import { SettingsModal } from './components/SettingsModal';
 import { SoundToggle } from './components/SoundToggle';
-import { WhoStartsModal } from './components/WhoStartsModal';
 import { isEnvConfigured, missingRequiredEnvVars } from './config/env';
 import { subscribeChallenges } from './services/challengesService';
 
@@ -20,7 +19,6 @@ const AdminPanel = lazy(() =>
   import('./components/AdminPanel').then((mod) => ({ default: mod.AdminPanel }))
 );
 import {
-  getCategoryMeta,
   type CategoryId,
   type Challenge,
   type CoupleNames,
@@ -28,7 +26,6 @@ import {
 } from './types';
 import {
   clearNightProgress,
-  hasAnyCoupleName,
   hasPromptedCoupleNames,
   isCandleModeEnabled,
   loadCoupleNames,
@@ -54,7 +51,6 @@ interface SessionConfig {
   categoryId: CategoryId;
   deck: Challenge[];
   initialIndex: number;
-  initialTurnIndex: 0 | 1;
   initialCompleted: number;
   initialSkipped: number;
   initialElapsedSeconds: number;
@@ -81,16 +77,11 @@ export default function App() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pendingResume, setPendingResume] = useState<SavedNightProgress | null>(null);
-  const [pendingWhoStarts, setPendingWhoStarts] = useState<{
-    categoryId: CategoryId;
-    deck: Challenge[];
-  } | null>(null);
 
   const [sessionConfig, setSessionConfig] = useState<SessionConfig>({
     categoryId: 'dal3',
     deck: [],
     initialIndex: 0,
-    initialTurnIndex: 0,
     initialCompleted: 0,
     initialSkipped: 0,
     initialElapsedSeconds: 0,
@@ -174,16 +165,10 @@ export default function App() {
     clearNightProgress(categoryId);
     const deck = buildDeckForCategory(categoryId);
 
-    if (deck.length > 0 && hasAnyCoupleName(coupleNames)) {
-      setPendingWhoStarts({ categoryId, deck });
-      return;
-    }
-
     launchChallengeSession({
       categoryId,
       deck,
       initialIndex: 0,
-      initialTurnIndex: 0,
       initialCompleted: 0,
       initialSkipped: 0,
       initialElapsedSeconds: 0,
@@ -227,7 +212,6 @@ export default function App() {
       categoryId: saved.categoryId,
       deck: resolvedDeck,
       initialIndex: Math.min(saved.currentIndex, resolvedDeck.length - 1),
-      initialTurnIndex: saved.turnIndex === 1 ? 1 : 0,
       initialCompleted: saved.completedCount || 0,
       initialSkipped: saved.skippedCount || 0,
       initialElapsedSeconds: saved.elapsedSeconds || 0,
@@ -324,7 +308,6 @@ export default function App() {
             names={coupleNames}
             candleMode={candleMode}
             initialIndex={sessionConfig.initialIndex}
-            initialTurnIndex={sessionConfig.initialTurnIndex}
             initialCompleted={sessionConfig.initialCompleted}
             initialSkipped={sessionConfig.initialSkipped}
             initialElapsedSeconds={sessionConfig.initialElapsedSeconds}
@@ -385,31 +368,6 @@ export default function App() {
         onResume={handleResumeSavedNight}
         onRestart={handleRestartFromModal}
         onClose={() => setPendingResume(null)}
-      />
-
-      <WhoStartsModal
-        open={Boolean(pendingWhoStarts)}
-        names={coupleNames}
-        nightTitle={
-          pendingWhoStarts
-            ? getCategoryMeta(pendingWhoStarts.categoryId).title
-            : ''
-        }
-        onSelectStarter={(turnIndex) => {
-          if (!pendingWhoStarts) return;
-          const { categoryId, deck } = pendingWhoStarts;
-          setPendingWhoStarts(null);
-          launchChallengeSession({
-            categoryId,
-            deck,
-            initialIndex: 0,
-            initialTurnIndex: turnIndex,
-            initialCompleted: 0,
-            initialSkipped: 0,
-            initialElapsedSeconds: 0,
-          });
-        }}
-        onCancel={() => setPendingWhoStarts(null)}
       />
     </div>
   );

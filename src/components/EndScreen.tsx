@@ -64,10 +64,10 @@ export function EndScreen({
 
   return (
     <motion.main
-      initial={{ opacity: 0, scale: 0.96 }}
+      initial={{ opacity: 0, scale: 0.985 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      exit={{ opacity: 0, scale: 0.985 }}
+      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
       className="relative z-10 min-h-[100dvh] lg:h-[100dvh] lg:overflow-hidden flex flex-col items-center justify-center px-5 pt-14 pb-8"
     >
       <div className="w-full max-w-[1600px] mx-auto flex justify-center">

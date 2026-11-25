@@ -4,7 +4,7 @@ export const SEED_CHALLENGES: ChallengeInput[] = [
   // سهرة الدلع
   {
     category: 'dal3',
-    text: 'ينظر {name} في عيني {partner} بصمت تام لمدة دقيقتين، ثم يخبره بأجمل شيء يراه فيه هذه اللحظة.',
+    text: 'ينظر {ولد} في عيني {بنت} بصمت تام لمدة دقيقتين، ثم يخبرها بأجمل شيء يراه فيها هذه اللحظة.',
     imageUrl: '',
     audioUrl: '',
     timerMinutes: 2,
@@ -14,7 +14,7 @@ export const SEED_CHALLENGES: ChallengeInput[] = [
   },
   {
     category: 'dal3',
-    text: 'يقدّم {name} لـ {partner} تدليكاً هادئاً ولطيفاً لليدين والكتفين مع همس ثلاث جمل غزل صادقة.',
+    text: 'يقدّم {ولد} لـ {بنت} تدليكاً هادئاً ولطيفاً لليدين والكتفين مع همس ثلاث جمل غزل صادقة.',
     imageUrl: '',
     audioUrl: '',
     timerMinutes: null,
@@ -36,7 +36,7 @@ export const SEED_CHALLENGES: ChallengeInput[] = [
   // سهرة المتعة والاثارة
   {
     category: 'motaa',
-    text: 'رقصة بطيئة متقاربة في إضاءة خافتة، يتبادل فيها {name} و{partner} قيادة الخطوات ببطء وانسجام.',
+    text: 'رقصة بطيئة متقاربة في إضاءة خافتة، يتبادل فيها {ولد} و{بنت} قيادة الخطوات ببطء وانسجام.',
     imageUrl: '',
     audioUrl: '',
     timerMinutes: 5,
@@ -46,7 +46,7 @@ export const SEED_CHALLENGES: ChallengeInput[] = [
   },
   {
     category: 'motaa',
-    text: 'يقترب {name} ويهمس في أذن {partner} بأكثر ذكرى رومانسية جمعتهما ويتمنى تكرارها الليلة بتفاصيلها.',
+    text: 'يقترب {ولد} ويهمس في أذن {بنت} بأكثر ذكرى رومانسية جمعتهما ويتمنى تكرارها الليلة بتفاصيلها.',
     imageUrl: '',
     audioUrl: '',
     timerMinutes: null,
@@ -56,7 +56,7 @@ export const SEED_CHALLENGES: ChallengeInput[] = [
   },
   {
     category: 'motaa',
-    text: 'يغمّض {partner} عينيه بلطف، ويتعرّف على لمسات {name} الدافئة على الوجه والعنق واليدين لمدة دقيقتين.',
+    text: 'تغمّض {بنت} عينيها بلطف، وتتعرف على لمسات {ولد} الدافئة على الوجه والعنق واليدين لمدة دقيقتين.',
     imageUrl: '',
     audioUrl: '',
     timerMinutes: 2,
@@ -78,7 +78,7 @@ export const SEED_CHALLENGES: ChallengeInput[] = [
   },
   {
     category: 'akher',
-    text: 'يتولى {name} دور «سلطان الليلة» ويطلب أمنية رومانسية رقيقة ينفذها {partner} بكل حب واهتمام.',
+    text: 'يتولى {ولد} دور «سلطان الليلة» ويطلب أمنية رومانسية رقيقة تنفذها {بنت} بكل حب واهتمام.',
     imageUrl: '',
     audioUrl: '',
     timerMinutes: null,

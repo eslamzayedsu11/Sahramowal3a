@@ -1,4 +1,3 @@
-import { motion, useReducedMotion } from 'motion/react';
 import { useRef } from 'react';
 import { playHoverSound, playSecretUnlockSound } from '../utils/sound';
 
@@ -8,7 +7,6 @@ interface BrandLogoProps {
 }
 
 export function BrandLogo({ onTripleTap, size = 'lg' }: BrandLogoProps) {
-  const prefersReducedMotion = useReducedMotion();
   const tapTimestampsRef = useRef<number[]>([]);
 
   const handleTap = () => {
@@ -49,7 +47,7 @@ export function BrandLogo({ onTripleTap, size = 'lg' }: BrandLogoProps) {
         }
       }}
       aria-label="سهرة مولعة"
-      className="group relative inline-flex items-center justify-center gap-3 min-h-[48px] px-5 sm:px-7 py-2 sm:py-2.5 rounded-2xl border border-[#FF4D8D]/30 bg-[#1B0A22]/75 neon-ember-box hover:border-[#FF4D8D]/65 hover:brightness-110 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D8D]/80 active:scale-[0.98] transition-all"
+      className="group relative inline-flex items-center justify-center gap-3 min-h-[48px] px-5 sm:px-7 py-2 sm:py-2.5 rounded-2xl border border-[#FF4D8D]/30 bg-[#1B0A22]/85 neon-ember-box hover:border-[#FF4D8D]/65 hover:brightness-110 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D8D]/80 active:scale-[0.98] transition-all"
     >
       {/* Wall mounting screws */}
       <span
@@ -62,59 +60,17 @@ export function BrandLogo({ onTripleTap, size = 'lg' }: BrandLogoProps) {
       />
 
       {/* Neon wall sign text */}
-      <motion.span
-        className={`font-neon ${titleClasses} neon-rose-text leading-none tracking-wide transition-all group-hover:drop-shadow-[0_0_16px_rgba(255,77,141,0.95)]`}
-        animate={
-          prefersReducedMotion
-            ? { opacity: 1 }
-            : {
-                opacity: [1, 0.93, 1, 0.87, 1, 0.96, 1],
-              }
-        }
-        transition={
-          prefersReducedMotion
-            ? undefined
-            : {
-                duration: 4.6,
-                repeat: Infinity,
-                times: [0, 0.14, 0.18, 0.62, 0.65, 0.85, 1],
-                ease: 'easeInOut',
-              }
-        }
+      <span
+        className={`neon-flicker font-neon ${titleClasses} neon-rose-text leading-none tracking-wide transition-all group-hover:drop-shadow-[0_0_14px_rgba(255,77,141,0.9)]`}
       >
         سهرة مولعة
-      </motion.span>
+      </span>
 
-      {/* Hand-drawn SVG living flame (no emoji) */}
-      <motion.svg
+      {/* Hand-drawn SVG living flame (CSS GPU-composited flicker) */}
+      <svg
         aria-hidden="true"
         viewBox="0 0 36 44"
-        className={`${flameClasses} shrink-0 origin-bottom`}
-        animate={
-          prefersReducedMotion
-            ? { opacity: 1 }
-            : {
-                scaleY: [1, 1.09, 0.95, 1.06, 1],
-                scaleX: [1, 0.95, 1.04, 0.97, 1],
-                rotate: [-2, 3, -3, 2, -2],
-                filter: [
-                  'drop-shadow(0 0 8px rgba(255,122,61,0.75))',
-                  'drop-shadow(0 0 14px rgba(255,77,141,0.9))',
-                  'drop-shadow(0 0 7px rgba(255,122,61,0.65))',
-                  'drop-shadow(0 0 12px rgba(255,77,141,0.85))',
-                  'drop-shadow(0 0 8px rgba(255,122,61,0.75))',
-                ],
-              }
-        }
-        transition={
-          prefersReducedMotion
-            ? undefined
-            : {
-                duration: 1.9,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }
-        }
+        className={`flame-flicker ${flameClasses} shrink-0 origin-bottom drop-shadow-[0_0_10px_rgba(255,122,61,0.75)]`}
       >
         <path
           d="M18.5 2C20.2 9.4 29 14.5 29 24.8C29 33.4 23.6 40.5 17.6 40.5C10.5 40.5 6 34.1 6 26.2C6 19.3 10.6 14.1 13.3 10.5C13.6 14.3 15.6 16.3 16.5 16.3C14.7 11.4 16.1 6.1 18.5 2Z"
@@ -128,7 +84,7 @@ export function BrandLogo({ onTripleTap, size = 'lg' }: BrandLogoProps) {
           d="M17.4 23.8C19.1 26.6 20.6 29.1 20.6 32.1C20.6 34.8 19.1 36.8 17.2 36.8C15.2 36.8 13.8 34.8 13.8 32.3C13.8 29.4 15.5 26.4 17.4 23.8Z"
           fill="#F4E8D8"
         />
-      </motion.svg>
+      </svg>
     </button>
   );
 }

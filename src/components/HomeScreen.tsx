@@ -82,7 +82,7 @@ function ParallaxNightCard({
               rotateY: tiltY,
             }
       }
-      initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 24, rotate: baseRotate * 1.4 }}
+      initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 12, rotate: baseRotate * 1.2 }}
       animate={
         prefersReducedMotion
           ? { opacity: 1 }
@@ -91,10 +91,10 @@ function ParallaxNightCard({
       whileHover={
         prefersReducedMotion
           ? undefined
-          : { scale: 1.038, rotate: hoverRotate, y: -10 }
+          : { scale: 1.032, rotate: hoverRotate, y: -8 }
       }
       whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
-      transition={{ duration: 0.42, delay, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.22, delay: delay * 0.5, ease: [0.16, 1, 0.3, 1] }}
       onPointerMove={handlePointerMove}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
@@ -129,10 +129,10 @@ export function HomeScreen({
 
   return (
     <motion.main
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
       className="relative z-10 min-h-[100dvh] lg:h-[100dvh] lg:overflow-hidden flex flex-col items-center justify-between px-4 sm:px-6 lg:px-10 pt-16 lg:pt-[62px] pb-6 lg:pb-[clamp(0.75rem,2vh,1.75rem)]"
     >
       {/* Top Quick Controls (Candle + Settings beside fixed Sound & Fullscreen toggles) */}
@@ -145,10 +145,10 @@ export function HomeScreen({
           }}
           aria-label={candleMode ? 'إيقاف وضع الشمعة' : 'تفعيل وضع الشمعة'}
           title="وضع الشمعة"
-          className={`min-h-[44px] min-w-[44px] rounded-full border flex items-center justify-center backdrop-blur-md shadow-[0_6px_18px_rgba(0,0,0,0.45)] transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A3D] ${
+          className={`min-h-[44px] min-w-[44px] rounded-full border flex items-center justify-center shadow-[0_6px_18px_rgba(0,0,0,0.45)] transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A3D] ${
             candleMode
-              ? 'border-[#FF7A3D] bg-[#3A1A14]/90 text-[#FF7A3D]'
-              : 'border-[#B98A9E]/35 bg-[#1C0B24]/80 text-[#F4E8D8] hover:border-[#FF7A3D]/65'
+              ? 'border-[#FF7A3D] bg-[#3A1A14]/95 text-[#FF7A3D]'
+              : 'border-[#B98A9E]/35 bg-[#1C0B24]/92 text-[#F4E8D8] hover:border-[#FF7A3D]/65'
           }`}
         >
           <Flame className="h-4 w-4" />
@@ -162,7 +162,7 @@ export function HomeScreen({
           }}
           aria-label="الإعدادات"
           title="الإعدادات"
-          className="min-h-[44px] min-w-[44px] rounded-full border border-[#B98A9E]/35 bg-[#1C0B24]/80 text-[#F4E8D8] hover:border-[#FF4D8D]/65 flex items-center justify-center backdrop-blur-md shadow-[0_6px_18px_rgba(0,0,0,0.45)] transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D8D]"
+          className="min-h-[44px] min-w-[44px] rounded-full border border-[#B98A9E]/35 bg-[#1C0B24]/92 text-[#F4E8D8] hover:border-[#FF4D8D]/65 flex items-center justify-center shadow-[0_6px_18px_rgba(0,0,0,0.45)] transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D8D]"
         >
           <Settings className="h-4 w-4" />
         </button>
@@ -316,31 +316,16 @@ export function HomeScreen({
 
                     <div className="mb-3 flex items-center justify-between">
                       <svg aria-hidden="true" viewBox="0 0 84 36" className="h-9 w-20">
-                        <motion.path
+                        <path
                           d="M4 22 L18 22 L24 10 L32 30 L40 6 L47 24 L54 18 L66 18 C72 18 76 13 80 18"
                           fill="none"
                           stroke="#FF4D8D"
                           strokeWidth="2.4"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          animate={
-                            prefersReducedMotion
-                              ? { opacity: 1 }
-                              : hovered
-                                ? { opacity: [1, 0.85, 1, 0.92, 1] }
-                                : candleMode
-                                  ? { opacity: 0.8 }
-                                  : { opacity: [1, 0.72, 1, 0.85, 1] }
-                          }
-                          transition={
-                            prefersReducedMotion
-                              ? undefined
-                              : { duration: hovered ? 0.9 : 2.6, repeat: Infinity }
-                          }
+                          className={candleMode ? 'opacity-80' : 'neon-flicker'}
                           style={{
-                            filter: hovered
-                              ? 'drop-shadow(0 0 11px #FF4D8D)'
-                              : 'drop-shadow(0 0 6px #FF4D8D)',
+                            filter: 'drop-shadow(0 0 7px #FF4D8D)',
                           }}
                         />
                         <circle cx="80" cy="18" r="2.8" fill="#FF7A3D" />
@@ -350,25 +335,13 @@ export function HomeScreen({
                       </span>
                     </div>
 
-                    <motion.h2
-                      animate={
-                        prefersReducedMotion
-                          ? { opacity: 1 }
-                          : hovered
-                            ? { opacity: [1, 0.92, 1, 0.95, 1] }
-                            : candleMode
-                              ? { opacity: 0.9 }
-                              : { opacity: [1, 0.9, 1, 0.84, 1] }
-                      }
-                      transition={
-                        prefersReducedMotion
-                          ? undefined
-                          : { duration: hovered ? 1.1 : 3.8, repeat: Infinity }
-                      }
-                      className="font-neon text-[clamp(1.85rem,2.75vw,2.65rem)] neon-rose-text mb-2 leading-tight"
+                    <h2
+                      className={`font-neon text-[clamp(1.85rem,2.75vw,2.65rem)] neon-rose-text mb-2 leading-tight ${
+                        candleMode ? 'opacity-90' : 'neon-flicker'
+                      }`}
                     >
                       سهرة المتعة والاثارة
-                    </motion.h2>
+                    </h2>
 
                     <p className="text-[clamp(0.875rem,1.05vw,1.02rem)] text-[#F4E8D8]/88 leading-relaxed mb-[clamp(1rem,2.5vh,1.75rem)]">
                       شغف متجدد ولحظات جريئة تشعل الأجواء بالحب

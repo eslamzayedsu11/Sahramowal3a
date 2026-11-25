@@ -86,15 +86,14 @@ export function getCategoryMeta(id: CategoryId): CategoryMeta {
 }
 
 export interface CoupleNames {
-  partner1: string;
-  partner2: string;
+  boy: string;
+  girl: string;
 }
 
 export interface SavedNightProgress {
   categoryId: CategoryId;
   currentIndex: number;
   deckIds: string[];
-  turnIndex: 0 | 1;
   completedCount: number;
   skippedCount: number;
   elapsedSeconds: number;

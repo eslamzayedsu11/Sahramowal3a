@@ -55,14 +55,15 @@ export function ComfortSheet({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.16 }}
           onClick={handleClose}
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/82 p-0 sm:p-4"
         >
           <motion.div
-            initial={{ y: 50, opacity: 0 }}
+            initial={{ y: 36, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 50, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ y: 36, opacity: 0 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
             className="w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-[#B98A9E]/30 bg-[#1B0A22] p-6 shadow-2xl text-[#F4E8D8]"
           >
@@ -87,7 +88,7 @@ export function ComfortSheet({
                       repeat: Infinity,
                       ease: 'easeInOut',
                     }}
-                    className="absolute inset-0 rounded-full bg-[#FF4D8D]/25 blur-md"
+                    className="absolute inset-0 rounded-full bg-[#FF4D8D]/20"
                   />
                   <motion.div
                     animate={{

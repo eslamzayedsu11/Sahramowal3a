@@ -21,7 +21,6 @@ import {
 import {
   clearNightProgress,
   formatChallengeText,
-  getTurnDisplayName,
   saveNightProgress,
 } from '../utils/preferences';
 import {
@@ -48,7 +47,6 @@ interface ChallengeScreenProps {
   names: CoupleNames;
   candleMode?: boolean;
   initialIndex?: number;
-  initialTurnIndex?: 0 | 1;
   initialCompleted?: number;
   initialSkipped?: number;
   initialElapsedSeconds?: number;
@@ -79,7 +77,6 @@ export function ChallengeScreen({
   names,
   candleMode = false,
   initialIndex = 0,
-  initialTurnIndex = 0,
   initialCompleted = 0,
   initialSkipped = 0,
   initialElapsedSeconds = 0,
@@ -92,7 +89,6 @@ export function ChallengeScreen({
   const [currentIndex, setCurrentIndex] = useState(
     Math.min(initialIndex, Math.max(0, initialDeck.length - 1))
   );
-  const [turnIndex, setTurnIndex] = useState<0 | 1>(initialTurnIndex);
   const [completedCount, setCompletedCount] = useState(initialCompleted);
   const [skippedCount, setSkippedCount] = useState(initialSkipped);
   const [comfortOpen, setComfortOpen] = useState(false);
@@ -174,7 +170,6 @@ export function ChallengeScreen({
       categoryId,
       currentIndex,
       deckIds: deck.map((c) => c.id),
-      turnIndex,
       completedCount,
       skippedCount,
       elapsedSeconds: totalElapsed,
@@ -184,7 +179,6 @@ export function ChallengeScreen({
     categoryId,
     currentIndex,
     deck,
-    turnIndex,
     completedCount,
     skippedCount,
     initialElapsedSeconds,
@@ -335,7 +329,21 @@ export function ChallengeScreen({
     };
 
     syncFrame();
-    const interval = window.setInterval(syncFrame, 60);
+    let timerId: number;
+    const scheduleNext = () => {
+      const remMs = endTimestampRef.current !== null
+        ? Math.max(0, endTimestampRef.current - Date.now())
+        : 0;
+      const delay = remMs <= (fadeStartSec + 1.5) * 1000 ? 80 : 220;
+      timerId = window.setTimeout(() => {
+        syncFrame();
+        if (endTimestampRef.current !== null) {
+          scheduleNext();
+        }
+      }, delay);
+    };
+    scheduleNext();
+
     const onVisibility = () => {
       if (document.visibilityState === 'visible') {
         syncFrame();
@@ -344,7 +352,7 @@ export function ChallengeScreen({
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      window.clearInterval(interval);
+      window.clearTimeout(timerId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [
@@ -435,7 +443,6 @@ export function ChallengeScreen({
 
       setCompletedCount(nextCompleted);
       setSkippedCount(nextSkipped);
-      setTurnIndex((t) => (t === 0 ? 1 : 0));
       setCurrentIndex((prev) => prev + 1);
     },
     [completedCount, currentIndex, deck.length, finishNight, skippedCount]
@@ -448,7 +455,6 @@ export function ChallengeScreen({
     setSongVolume(1);
     stopAndReleaseSong();
     playWhooshSound();
-    setTurnIndex((t) => (t === 0 ? 1 : 0));
     setCurrentIndex((prev) => Math.max(0, prev - 1));
   }, [currentIndex]);
 
@@ -660,19 +666,18 @@ export function ChallengeScreen({
     );
   }
 
-  const displayText = formatChallengeText(currentChallenge.text, names, turnIndex);
+  const displayText = formatChallengeText(currentChallenge.text, names);
   const displayBackNote = currentChallenge.backNote
-    ? formatChallengeText(currentChallenge.backNote, names, turnIndex)
+    ? formatChallengeText(currentChallenge.backNote, names)
     : '';
-  const turnDisplayName = getTurnDisplayName(names, turnIndex);
   const inTensionOverlay = tensionSecond !== null;
 
   return (
     <motion.main
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
       className="relative z-10 min-h-[100dvh] lg:h-[100dvh] lg:overflow-hidden flex flex-col items-center px-4 sm:px-6 lg:px-10 pt-16 lg:pt-[54px] pb-6 lg:pb-3"
     >
       {/* Heartbeat Ember/Red Edge Vignette during Final Seconds */}
@@ -784,22 +789,21 @@ export function ChallengeScreen({
               initial={
                 prefersReducedMotion
                   ? { opacity: 0 }
-                  : { opacity: 0, scale: 0.98, y: 10 }
+                  : { opacity: 0, scale: 0.985, y: 6 }
               }
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={
                 prefersReducedMotion
                   ? { opacity: 0 }
-                  : { opacity: 0, scale: 0.98, y: -10 }
+                  : { opacity: 0, scale: 0.985, y: -6 }
               }
-              transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="flex-1 min-h-0 flex flex-col"
             >
               <ChallengeStage
                 challenge={currentChallenge}
                 displayText={displayText}
                 displayBackNote={displayBackNote}
-                turnDisplayName={turnDisplayName}
                 remainingSeconds={remainingSeconds}
                 totalSeconds={totalDurationSeconds}
                 timerFinished={timerFinished}

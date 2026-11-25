@@ -150,13 +150,13 @@ export function PolaroidFrame({
 
   const frameSizeClasses = previewMode
     ? 'max-w-[230px]'
-    : 'max-w-[230px] sm:max-w-[280px] lg:max-w-[clamp(250px,34vh,410px)] xl:max-w-[clamp(290px,38vh,450px)]';
+    : 'max-w-[270px] sm:max-w-[300px] lg:max-w-[clamp(250px,34vh,410px)] xl:max-w-[clamp(290px,38vh,450px)]';
 
   const mediaBoxHeightClasses = previewMode
     ? 'h-[170px]'
     : compactForTurntable
-      ? 'h-[185px] sm:h-[215px] lg:h-[clamp(145px,23dvh,305px)]'
-      : 'h-[190px] sm:h-[230px] lg:h-[clamp(185px,30dvh,340px)]';
+      ? 'h-[195px] sm:h-[220px] lg:h-[clamp(145px,23dvh,305px)]'
+      : 'h-[205px] sm:h-[235px] lg:h-[clamp(185px,30dvh,340px)]';
 
   return (
     <div
@@ -422,7 +422,7 @@ export function PolaroidFrame({
                     onLoadedData={() => setLoaded(true)}
                     onCanPlay={() => setLoaded(true)}
                     onError={() => setFailed(true)}
-                    className={`max-h-full max-w-full w-full h-full object-contain transition-opacity duration-300 ${
+                    className={`w-full h-full object-cover object-center transition-opacity duration-300 ${
                       loaded ? 'opacity-100' : 'opacity-0'
                     }`}
                   />
@@ -433,7 +433,7 @@ export function PolaroidFrame({
                     referrerPolicy="no-referrer"
                     onLoad={() => setLoaded(true)}
                     onError={() => setFailed(true)}
-                    className={`max-h-full max-w-full w-full h-full object-contain transition-opacity duration-300 ${
+                    className={`w-full h-full object-cover object-center transition-opacity duration-300 ${
                       loaded ? 'opacity-100' : 'opacity-0'
                     }`}
                   />

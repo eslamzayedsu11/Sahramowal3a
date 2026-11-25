@@ -492,27 +492,6 @@ export function playVinylLiftSound(): void {
   osc.stop(now + 0.06);
 }
 
-/** 10. Delicate wheel/petal tick for Who Starts */
-export function playWheelTickSound(): void {
-  const audio = getContext();
-  if (!audio) return;
-  const { ctx, out } = audio;
-  const now = ctx.currentTime;
-
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(720, now);
-  osc.frequency.exponentialRampToValueAtTime(320, now + 0.03);
-  gain.gain.setValueAtTime(0.001, now);
-  gain.gain.linearRampToValueAtTime(0.18, now + 0.004);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
-  osc.connect(gain);
-  gain.connect(out);
-  osc.start(now);
-  osc.stop(now + 0.04);
-}
-
 /** 11. Polaroid paper flick sound */
 export function playPaperFlickSound(): void {
   const audio = getContext();

@@ -50,17 +50,18 @@ export function ShortcutsSheet({ open, onClose }: ShortcutsSheetProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.16 }}
           onClick={() => {
             playTapSound();
             onClose();
           }}
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/82 p-0 sm:p-4"
         >
           <motion.div
-            initial={{ y: 36, opacity: 0, scale: 0.97 }}
+            initial={{ y: 24, opacity: 0, scale: 0.98 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 36, opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ y: 24, opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.17, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
             dir="rtl"
             className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl border border-[#B98A9E]/30 bg-[#1B0A22] p-6 shadow-2xl text-[#F4E8D8]"

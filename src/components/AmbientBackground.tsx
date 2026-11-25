@@ -1,5 +1,4 @@
-import { motion, useMotionValue, useReducedMotion, useSpring } from 'motion/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { subscribeTensionLevel } from '../utils/tensionState';
 
 interface Petal {
@@ -9,7 +8,6 @@ interface Petal {
   duration: number;
   delay: number;
   drift: number;
-  rot: number;
   opacity: number;
 }
 
@@ -26,44 +24,73 @@ const FAIRY_BULBS = [
   { x: 93, y: 21, color: '#FF7A3D', delay: 1.2 },
 ];
 
+const PETALS: Petal[] = [
+  { id: 1, left: 9, size: 18, duration: 22, delay: 0, drift: 26, opacity: 0.35 },
+  { id: 2, left: 23, size: 14, duration: 25, delay: 4, drift: -20, opacity: 0.28 },
+  { id: 3, left: 39, size: 20, duration: 20, delay: 7, drift: 30, opacity: 0.32 },
+  { id: 4, left: 56, size: 15, duration: 24, delay: 2, drift: -24, opacity: 0.26 },
+  { id: 5, left: 73, size: 17, duration: 21, delay: 6, drift: 22, opacity: 0.34 },
+  { id: 6, left: 88, size: 14, duration: 26, delay: 9, drift: -28, opacity: 0.28 },
+];
+
 export function AmbientBackground({ candleMode = false }: { candleMode?: boolean }) {
-  const prefersReducedMotion = useReducedMotion();
   const [tensionLevel, setTensionLevel] = useState(0);
-  const rawX = useMotionValue(-300);
-  const rawY = useMotionValue(-300);
-  const candleX = useSpring(rawX, { stiffness: 70, damping: 24 });
-  const candleY = useSpring(rawY, { stiffness: 70, damping: 24 });
+  const glowRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     return subscribeTensionLevel(setTensionLevel);
   }, []);
 
+  // Lightweight rAF-throttled pointer glow using GPU translate3d (no blur-3xl filter, no JS springs)
   useEffect(() => {
-    rawX.set(window.innerWidth * 0.5);
-    rawY.set(window.innerHeight * 0.38);
+    const el = glowRef.current;
+    if (!el) return;
+
+    let targetX = window.innerWidth * 0.5;
+    let targetY = window.innerHeight * 0.38;
+    let currentX = targetX;
+    let currentY = targetY;
+    let rafId = 0;
+    let active = false;
+
+    const applyTransform = (x: number, y: number) => {
+      el.style.transform = `translate3d(${x - 240}px, ${y - 240}px, 0)`;
+    };
+
+    applyTransform(currentX, currentY);
+
+    const step = () => {
+      const dx = targetX - currentX;
+      const dy = targetY - currentY;
+      currentX += dx * 0.16;
+      currentY += dy * 0.16;
+      applyTransform(currentX, currentY);
+
+      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+        rafId = window.requestAnimationFrame(step);
+      } else {
+        active = false;
+      }
+    };
 
     const handleMove = (e: PointerEvent) => {
-      rawX.set(e.clientX);
-      rawY.set(e.clientY);
+      if (e.pointerType !== 'mouse') return;
+      targetX = e.clientX;
+      targetY = e.clientY;
+      if (!active) {
+        active = true;
+        rafId = window.requestAnimationFrame(step);
+      }
     };
 
     window.addEventListener('pointermove', handleMove, { passive: true });
-    return () => window.removeEventListener('pointermove', handleMove);
-  }, [rawX, rawY]);
+    return () => {
+      window.removeEventListener('pointermove', handleMove);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, []);
 
-  const petals = useMemo<Petal[]>(
-    () => [
-      { id: 1, left: 9, size: 18, duration: 22, delay: 0, drift: 26, rot: 20, opacity: 0.35 },
-      { id: 2, left: 23, size: 14, duration: 25, delay: 4, drift: -20, rot: -35, opacity: 0.28 },
-      { id: 3, left: 39, size: 20, duration: 20, delay: 7, drift: 30, rot: 50, opacity: 0.32 },
-      { id: 4, left: 56, size: 15, duration: 24, delay: 2, drift: -24, rot: 12, opacity: 0.26 },
-      { id: 5, left: 73, size: 17, duration: 21, delay: 6, drift: 22, rot: -45, opacity: 0.34 },
-      { id: 6, left: 88, size: 14, duration: 26, delay: 9, drift: -28, rot: 30, opacity: 0.28 },
-    ],
-    []
-  );
-
-  const visiblePetals = candleMode ? petals.slice(0, 3) : petals;
+  const visiblePetals = candleMode ? PETALS.slice(0, 3) : PETALS;
   const inTension = tensionLevel > 0;
 
   return (
@@ -81,43 +108,19 @@ export function AmbientBackground({ candleMode = false }: { candleMode?: boolean
         }}
       />
 
-      {/* Interactive flickering candle glow */}
-      <motion.div
+      {/* Soft radial candle glow (gradient-only, no expensive CSS blur-3xl filter) */}
+      <div
+        ref={glowRef}
+        className="absolute top-0 left-0 h-[480px] w-[480px] rounded-full will-change-transform"
         style={{
-          x: candleX,
-          y: candleY,
-          translateX: '-50%',
-          translateY: '-50%',
+          opacity: candleMode ? 0.3 : 0.46,
+          background: candleMode
+            ? 'radial-gradient(circle, rgba(255,152,72,0.22) 0%, rgba(180,90,45,0.08) 42%, transparent 72%)'
+            : 'radial-gradient(circle, rgba(255,122,61,0.2) 0%, rgba(255,77,141,0.09) 40%, transparent 72%)',
         }}
-        animate={
-          prefersReducedMotion
-            ? { opacity: candleMode ? 0.28 : 0.42 }
-            : candleMode
-              ? { scale: [1, 1.03, 0.99, 1], opacity: [0.28, 0.32, 0.26, 0.28] }
-              : { scale: [1, 1.07, 0.96, 1.04, 1], opacity: [0.42, 0.52, 0.38, 0.48, 0.42] }
-        }
-        transition={
-          prefersReducedMotion
-            ? undefined
-            : {
-                duration: candleMode ? 4.5 : 3.1,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }
-        }
-        className="absolute top-0 left-0 h-[420px] w-[420px] rounded-full blur-3xl"
-      >
-        <div
-          className="h-full w-full rounded-full"
-          style={{
-            background: candleMode
-              ? 'radial-gradient(circle, rgba(255,152,72,0.22) 0%, rgba(180,90,45,0.08) 45%, transparent 72%)'
-              : 'radial-gradient(circle, rgba(255,122,61,0.22) 0%, rgba(255,77,141,0.10) 42%, transparent 72%)',
-          }}
-        />
-      </motion.div>
+      />
 
-      {/* String of warm fairy lights across top */}
+      {/* String of warm fairy lights across top (CSS-composited flicker) */}
       <div className={`absolute top-0 left-0 right-0 h-20 ${candleMode ? 'opacity-45' : 'opacity-100'}`}>
         <svg
           viewBox="0 0 100 20"
@@ -142,95 +145,72 @@ export function AmbientBackground({ candleMode = false }: { candleMode?: boolean
           const flickerDuration = inTension
             ? candleMode
               ? 0.9
-              : Math.max(0.32, 0.85 - tensionLevel * 0.09)
+              : Math.max(0.35, 0.85 - tensionLevel * 0.09)
             : 3 + (i % 3) * 0.7;
 
           return (
-            <motion.div
+            <div
               key={i}
-              style={{ left: `${bulb.x}%`, top: `${bulb.y * 0.65}px` }}
-              animate={
-                prefersReducedMotion
-                  ? { opacity: inTension ? [0.45, 0.85, 0.45] : 0.75 }
-                  : candleMode
-                    ? { opacity: inTension ? [0.35, 0.72, 0.35] : [0.4, 0.55, 0.4] }
-                    : inTension
-                      ? {
-                          opacity: [0.35, 1, 0.4, 0.98, 0.35],
-                          scale: [0.9, 1.24, 0.92, 1.18, 0.9],
-                        }
-                      : {
-                          opacity: [0.45, 1, 0.55, 0.95, 0.45],
-                          scale: [0.92, 1.15, 0.95, 1.08, 0.92],
-                        }
+              style={
+                {
+                  left: `${bulb.x}%`,
+                  top: `${bulb.y * 0.65}px`,
+                  '--bulb-dur': `${flickerDuration}s`,
+                  '--bulb-delay': `${inTension ? (i % 3) * 0.08 : bulb.delay}s`,
+                } as CSSProperties
               }
-              transition={{
-                duration: flickerDuration,
-                delay: inTension ? (i % 3) * 0.08 : bulb.delay,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-              className="absolute -translate-x-1/2"
+              className="ambient-bulb absolute"
             >
               <div
                 className="h-2.5 w-2 rounded-full transition-colors duration-200"
                 style={{
                   backgroundColor: tint,
                   boxShadow: candleMode
-                    ? `0 0 8px 2px ${tint}55`
+                    ? `0 0 6px 1px ${tint}55`
                     : inTension
-                      ? `0 0 16px 4px ${tint}cc, 0 0 32px 8px ${tint}66`
-                      : `0 0 12px 3px ${tint}99, 0 0 26px 6px ${tint}44`,
+                      ? `0 0 12px 3px ${tint}cc`
+                      : `0 0 10px 2px ${tint}88`,
                 }}
               />
-            </motion.div>
+            </div>
           );
         })}
       </div>
 
-      {/* Drifting pressed rose petals */}
-      {!prefersReducedMotion &&
-        visiblePetals.map((p) => (
-          <motion.div
-            key={p.id}
-            className="absolute -bottom-10"
-            style={{ left: `${p.left}%`, opacity: 0 }}
-            animate={{
-              y: ['0vh', '-112vh'],
-              x: [0, p.drift, -p.drift * 0.4, p.drift * 0.6],
-              rotate: [p.rot, p.rot + 140, p.rot + 280],
-              opacity: [
-                0,
-                candleMode ? p.opacity * 0.45 : p.opacity,
-                candleMode ? p.opacity * 0.45 : p.opacity,
-                0,
-              ],
-            }}
-            transition={{
-              duration: candleMode ? p.duration * 1.4 : p.duration,
-              delay: p.delay,
-              repeat: Infinity,
-              ease: 'linear',
-            }}
-          >
-            <svg width={p.size} height={p.size} viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12.5 2C17.2 4.8 20.4 10.2 18.6 15.6C17.1 20.1 12.6 22.3 8.7 21C4.8 19.7 3.2 15.1 4.9 10.5C6.3 6.7 9.4 3.8 12.5 2Z"
-                fill="#B98A9E"
-                fillOpacity="0.45"
-              />
-              <path
-                d="M12 4.5C13.8 9.2 13.6 14.5 11.2 19.2"
-                stroke="#FF4D8D"
-                strokeOpacity="0.3"
-                strokeWidth="0.8"
-              />
-            </svg>
-          </motion.div>
-        ))}
+      {/* Drifting pressed rose petals (pure CSS compositor animation) */}
+      {visiblePetals.map((p) => (
+        <div
+          key={p.id}
+          className="ambient-petal absolute -bottom-10"
+          style={
+            {
+              left: `${p.left}%`,
+              opacity: 0,
+              '--petal-dur': `${candleMode ? p.duration * 1.4 : p.duration}s`,
+              '--petal-delay': `${p.delay}s`,
+              '--petal-drift': `${p.drift}px`,
+              '--petal-opacity': candleMode ? p.opacity * 0.45 : p.opacity,
+            } as CSSProperties
+          }
+        >
+          <svg width={p.size} height={p.size} viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12.5 2C17.2 4.8 20.4 10.2 18.6 15.6C17.1 20.1 12.6 22.3 8.7 21C4.8 19.7 3.2 15.1 4.9 10.5C6.3 6.7 9.4 3.8 12.5 2Z"
+              fill="#B98A9E"
+              fillOpacity="0.45"
+            />
+            <path
+              d="M12 4.5C13.8 9.2 13.6 14.5 11.2 19.2"
+              stroke="#FF4D8D"
+              strokeOpacity="0.3"
+              strokeWidth="0.8"
+            />
+          </svg>
+        </div>
+      ))}
 
-      {/* Film grain + soft dark vignette */}
-      <div className="film-grain absolute inset-0 opacity-65 mix-blend-overlay" />
+      {/* Subtle atmospheric sheen + dark vignette */}
+      <div className="film-grain absolute inset-0 opacity-75" />
       <div
         className="absolute inset-0"
         style={{

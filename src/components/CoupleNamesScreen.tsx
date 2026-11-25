@@ -20,22 +20,22 @@ export function CoupleNamesScreen({
   onSave,
   onSkip,
 }: CoupleNamesScreenProps) {
-  const [partner1, setPartner1] = useState(initialNames.partner1);
-  const [partner2, setPartner2] = useState(initialNames.partner2);
+  const [boy, setBoy] = useState(initialNames.boy);
+  const [girl, setGirl] = useState(initialNames.girl);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     playWarmChime();
     playWhooshSound();
-    onSave({ partner1: partner1.trim(), partner2: partner2.trim() });
+    onSave({ boy: boy.trim(), girl: girl.trim() });
   };
 
   return (
     <motion.main
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
       className="relative z-10 min-h-[100dvh] lg:h-[100dvh] lg:overflow-hidden flex flex-col items-center justify-center px-5 py-8"
     >
       <div className="w-full max-w-[1600px] mx-auto flex flex-col items-center justify-center">
@@ -61,34 +61,34 @@ export function CoupleNamesScreen({
               مين نجم السهرة الليلة؟
             </h1>
             <p className="text-[clamp(0.85rem,1.05vw,0.98rem)] text-[#4A253A] text-center leading-relaxed mb-6">
-              اكتبا اسميكما لو حابين نخصص التحديات باسميكما (اختياري تماماً، ويمكن تعديله في أي وقت).
+              اكتبا اسم الولد واسم البنت لو حابين نخصص التحديات بأسمائكما (اختياري تماماً، ويمكن تعديله في أي وقت).
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-xs font-bold text-[#582E49] mb-1.5">
-                  الاسم الأول (اختياري)
+                  اسم الولد (اختياري)
                 </label>
                 <input
                   type="text"
                   maxLength={24}
-                  value={partner1}
-                  onChange={(e) => setPartner1(e.target.value)}
-                  placeholder="مثال: سارة"
+                  value={boy}
+                  onChange={(e) => setBoy(e.target.value)}
+                  placeholder="مثال: أحمد"
                   className="w-full min-h-[48px] rounded-lg border border-[#B98A9E]/60 bg-white/70 px-3.5 py-2 text-base text-[#14081A] placeholder:text-[#8A5770]/65 focus:outline-none focus:border-[#FF4D8D] focus:ring-2 focus:ring-[#FF4D8D]/25"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#582E49] mb-1.5">
-                  الاسم الثاني (اختياري)
+                  اسم البنت (اختياري)
                 </label>
                 <input
                   type="text"
                   maxLength={24}
-                  value={partner2}
-                  onChange={(e) => setPartner2(e.target.value)}
-                  placeholder="مثال: أحمد"
+                  value={girl}
+                  onChange={(e) => setGirl(e.target.value)}
+                  placeholder="مثال: سارة"
                   className="w-full min-h-[48px] rounded-lg border border-[#B98A9E]/60 bg-white/70 px-3.5 py-2 text-base text-[#14081A] placeholder:text-[#8A5770]/65 focus:outline-none focus:border-[#FF4D8D] focus:ring-2 focus:ring-[#FF4D8D]/25"
                 />
               </div>

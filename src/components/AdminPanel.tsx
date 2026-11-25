@@ -327,8 +327,6 @@ function ChallengeAdminRow({
             <video
               src={item.imageUrl}
               muted
-              loop
-              autoPlay
               playsInline
               preload="metadata"
               className="h-16 w-16 rounded-md object-cover border border-[#F4E8D8]/25 shrink-0 bg-[#14081A]"
@@ -337,6 +335,8 @@ function ChallengeAdminRow({
             <img
               src={item.imageUrl}
               alt=""
+              loading="lazy"
+              decoding="async"
               referrerPolicy="no-referrer"
               className="h-16 w-16 rounded-md object-cover border border-[#F4E8D8]/25 shrink-0"
             />
@@ -512,7 +512,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleInsertToken = (token: '{name}' | '{partner}') => {
+  const handleInsertToken = (token: '{ولد}' | '{بنت}') => {
     playTapSound();
     const el = textAreaRef.current;
     if (!el) {
@@ -606,7 +606,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
   const previewDisplayText = useMemo(
     () =>
       form.text
-        ? formatChallengeText(form.text, { partner1: 'أنت', partner2: 'الشريك' }, 0)
+        ? formatChallengeText(form.text, { boy: 'الولد', girl: 'البنت' })
         : '',
     [form.text]
   );
@@ -614,7 +614,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
   const previewDisplayBackNote = useMemo(
     () =>
       form.backNote.trim()
-        ? formatChallengeText(form.backNote, { partner1: 'أنت', partner2: 'الشريك' }, 0)
+        ? formatChallengeText(form.backNote, { boy: 'الولد', girl: 'البنت' })
         : '',
     [form.backNote]
   );
@@ -1013,7 +1013,6 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
               challenge={previewChallenge}
               displayText={previewDisplayText}
               displayBackNote={previewDisplayBackNote}
-              turnDisplayName="أنت"
               remainingSeconds={previewSeconds}
               totalSeconds={previewSeconds}
               timerFinished={previewSeconds === 0}
@@ -1067,17 +1066,19 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => handleInsertToken('{name}')}
-                className="min-h-[40px] px-3 py-1 rounded-lg border border-[#FF4D8D]/40 bg-[#FF4D8D]/12 hover:bg-[#FF4D8D]/25 text-xs font-bold text-[#F4E8D8] cursor-pointer"
+                onClick={() => handleInsertToken('{ولد}')}
+                title="إدراج اسم الولد تلقائياً"
+                className="min-h-[40px] px-3.5 py-1 rounded-lg border border-[#FF4D8D]/45 bg-[#FF4D8D]/15 hover:bg-[#FF4D8D]/25 text-xs font-bold text-[#F4E8D8] cursor-pointer"
               >
-                + {'{name}'}
+                + ولد
               </button>
               <button
                 type="button"
-                onClick={() => handleInsertToken('{partner}')}
-                className="min-h-[40px] px-3 py-1 rounded-lg border border-[#FF7A3D]/40 bg-[#FF7A3D]/12 hover:bg-[#FF7A3D]/25 text-xs font-bold text-[#F4E8D8] cursor-pointer"
+                onClick={() => handleInsertToken('{بنت}')}
+                title="إدراج اسم البنت تلقائياً"
+                className="min-h-[40px] px-3.5 py-1 rounded-lg border border-[#FF7A3D]/45 bg-[#FF7A3D]/15 hover:bg-[#FF7A3D]/25 text-xs font-bold text-[#F4E8D8] cursor-pointer"
               >
-                + {'{partner}'}
+                + بنت
               </button>
             </div>
           </div>
@@ -1090,7 +1091,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
             onChange={(e) =>
               setForm((prev) => ({ ...prev, text: e.target.value }))
             }
-            placeholder="اكتب التحدي الرومانسي بأسلوب راقٍ ولطيف..."
+            placeholder="اكتب التحدي الرومانسي بأسلوب راقٍ ولطيف... (اضغط + ولد أو + بنت لإدراج اسميهما)"
             className="w-full rounded-lg border border-[#B98A9E]/30 bg-[#120618] px-3.5 py-3 text-base text-[#F4E8D8] placeholder:text-[#B98A9E]/45 focus:outline-none focus:border-[#FF4D8D] leading-relaxed"
           />
         </div>
@@ -1452,7 +1453,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             role="status"
-            className={`fixed top-3 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-[60] flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-md ${
+            className={`fixed top-3 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-[60] flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm shadow-2xl ${
               statusMessage.type === 'success'
                 ? 'border-[#FF7A3D]/60 bg-[#240D20]/95 text-[#F4E8D8]'
                 : 'border-[#FF4D8D]/70 bg-[#360A22]/95 text-[#F4E8D8]'
@@ -1479,7 +1480,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
       </AnimatePresence>
 
       {/* Sticky Top Bar (Mobile-First + Clean on Desktop) */}
-      <header className="sticky top-0 z-30 border-b border-[#B98A9E]/20 bg-[#14081A]/92 backdrop-blur-md">
+      <header className="sticky top-0 z-30 border-b border-[#B98A9E]/20 bg-[#14081A]/98">
         <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 py-3 space-y-2.5">
           {/* Row 1: Back + Title + Bulk + "+ تحدي جديد" */}
           <div className="flex items-center justify-between gap-2">
@@ -1642,7 +1643,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
                   rows={5}
                   value={bulkText}
                   onChange={(e) => setBulkText(e.target.value)}
-                  placeholder={`اهمس في أذن {partner} بثلاث صفات تحبها فيه | 5 | دافئ\nرقصة هادئة على ضوء خافت | 10 | حار\nقبلة طويلة ومفاجأة لطيفة | | مولع`}
+                  placeholder={`يهمس {ولد} في أذن {بنت} بثلاث صفات يحبها فيها | 5 | دافئ\nرقصة هادئة على ضوء خافت | 10 | حار\nقبلة طويلة ومفاجأة لطيفة | | مولع`}
                   className="w-full rounded-lg border border-[#B98A9E]/30 bg-[#120618] px-3.5 py-3 text-base text-[#F4E8D8] placeholder:text-[#B98A9E]/40 focus:outline-none focus:border-[#FF4D8D] leading-relaxed"
                 />
               </div>
@@ -1825,13 +1826,13 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="lg:hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex flex-col justify-end"
+            className="lg:hidden fixed inset-0 z-50 bg-black/82 flex flex-col justify-end"
           >
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               className="h-[95dvh] w-full rounded-t-3xl border-t border-[#B98A9E]/35 bg-[#14081A] flex flex-col overflow-hidden shadow-2xl"
             >
               {/* Drag affordance & Sheet Header */}
@@ -1865,7 +1866,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
               </div>
 
               {/* Sticky Bottom Save Bar */}
-              <div className="shrink-0 border-t border-[#B98A9E]/25 bg-[#1B0A22]/95 backdrop-blur-md p-3 flex items-center gap-2.5">
+              <div className="shrink-0 border-t border-[#B98A9E]/25 bg-[#1B0A22] p-3 flex items-center gap-2.5">
                 <button
                   type="submit"
                   form="admin-editor-form-mobile"
@@ -1910,7 +1911,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => !deleting && setDeleteDialogTarget(null)}
-            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/82 p-4"
           >
             <motion.div
               initial={{ scale: 0.94, opacity: 0 }}

@@ -71,10 +71,10 @@ export function FullscreenToggle({ className = '' }: { className?: string }) {
       onClick={() => void handleToggle()}
       aria-label={isFullscreen ? 'الخروج من وضع ملء الشاشة' : 'تكبير ملء الشاشة'}
       title={isFullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة (وضع التلفاز)'}
-      className={`min-h-[44px] min-w-[44px] rounded-full border flex items-center justify-center backdrop-blur-md shadow-[0_6px_18px_rgba(0,0,0,0.45)] transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D8D] ${
+      className={`min-h-[44px] min-w-[44px] rounded-full border flex items-center justify-center shadow-[0_6px_18px_rgba(0,0,0,0.45)] transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D8D] ${
         isFullscreen
-          ? 'border-[#FF4D8D] bg-[#2D1038]/90 text-[#FF4D8D]'
-          : 'border-[#B98A9E]/35 bg-[#1C0B24]/80 text-[#F4E8D8] hover:border-[#FF4D8D]/65'
+          ? 'border-[#FF4D8D] bg-[#2D1038]/95 text-[#FF4D8D]'
+          : 'border-[#B98A9E]/35 bg-[#1C0B24]/92 text-[#F4E8D8] hover:border-[#FF4D8D]/65'
       } ${className}`}
     >
       {isFullscreen ? (

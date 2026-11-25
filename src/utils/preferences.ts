@@ -14,14 +14,14 @@ const candleListeners = new Set<(enabled: boolean) => void>();
 export function loadCoupleNames(): CoupleNames {
   try {
     const raw = localStorage.getItem(NAMES_KEY);
-    if (!raw) return { partner1: '', partner2: '' };
+    if (!raw) return { boy: '', girl: '' };
     const parsed = JSON.parse(raw) as Partial<CoupleNames>;
     return {
-      partner1: typeof parsed.partner1 === 'string' ? parsed.partner1.trim() : '',
-      partner2: typeof parsed.partner2 === 'string' ? parsed.partner2.trim() : '',
+      boy: typeof parsed.boy === 'string' ? parsed.boy.trim() : '',
+      girl: typeof parsed.girl === 'string' ? parsed.girl.trim() : '',
     };
   } catch {
-    return { partner1: '', partner2: '' };
+    return { boy: '', girl: '' };
   }
 }
 
@@ -30,8 +30,8 @@ export function saveCoupleNames(names: CoupleNames): void {
     localStorage.setItem(
       NAMES_KEY,
       JSON.stringify({
-        partner1: names.partner1.trim(),
-        partner2: names.partner2.trim(),
+        boy: names.boy.trim(),
+        girl: names.girl.trim(),
       })
     );
   } catch {
@@ -56,43 +56,23 @@ export function markPromptedCoupleNames(): void {
 }
 
 export function hasAnyCoupleName(names: CoupleNames): boolean {
-  return Boolean(names.partner1.trim() || names.partner2.trim());
-}
-
-export function getTurnDisplayName(names: CoupleNames, turnIndex: 0 | 1): string {
-  const p1 = names.partner1.trim();
-  const p2 = names.partner2.trim();
-  if (p1 && p2) return turnIndex === 0 ? p1 : p2;
-  if (p1) return turnIndex === 0 ? p1 : 'الشريك';
-  if (p2) return turnIndex === 0 ? p2 : 'الشريك';
-  return turnIndex === 0 ? 'أنت' : 'الشريك';
+  return Boolean(names.boy.trim() || names.girl.trim());
 }
 
 export function formatChallengeText(
   rawText: string,
-  names: CoupleNames,
-  turnIndex: 0 | 1
+  names: CoupleNames
 ): string {
-  const p1 = names.partner1.trim();
-  const p2 = names.partner2.trim();
-
-  let currentName = 'أنت';
-  let partnerName = 'الشريك';
-
-  if (p1 && p2) {
-    currentName = turnIndex === 0 ? p1 : p2;
-    partnerName = turnIndex === 0 ? p2 : p1;
-  } else if (p1) {
-    currentName = turnIndex === 0 ? p1 : 'الشريك';
-    partnerName = turnIndex === 0 ? 'الشريك' : p1;
-  } else if (p2) {
-    currentName = turnIndex === 0 ? p2 : 'الشريك';
-    partnerName = turnIndex === 0 ? 'الشريك' : p2;
-  }
+  const boyName = names.boy.trim() || 'الولد';
+  const girlName = names.girl.trim() || 'البنت';
 
   return rawText
-    .replace(/\{name\}/gi, currentName)
-    .replace(/\{partner\}/gi, partnerName);
+    .replace(/\{ولد\}/g, boyName)
+    .replace(/\{بنت\}/g, girlName)
+    .replace(/\{boy\}/gi, boyName)
+    .replace(/\{girl\}/gi, girlName)
+    .replace(/\{name\}/gi, boyName)
+    .replace(/\{partner\}/gi, girlName);
 }
 
 // Candle Mode
@@ -119,7 +99,7 @@ export function subscribeCandleMode(cb: (enabled: boolean) => void): () => void 
   return () => candleListeners.delete(cb);
 }
 
-// Per-night saved progress (ignores any legacy orderMode / heatFilter keys cleanly)
+// Per-night saved progress (ignores any legacy turnIndex / orderMode / heatFilter keys cleanly)
 export function loadNightProgress(
   categoryId: CategoryId
 ): SavedNightProgress | null {
@@ -153,7 +133,6 @@ export function loadNightProgress(
       categoryId,
       currentIndex,
       deckIds,
-      turnIndex: parsed.turnIndex === 1 ? 1 : 0,
       completedCount:
         typeof parsed.completedCount === 'number' &&
         Number.isFinite(parsed.completedCount)

@@ -14,7 +14,7 @@ export function PWAInstallBanner({ compact = false }: { compact?: boolean }) {
 
   return (
     <>
-      <div className="w-full max-w-md rounded-xl border border-[#B98A9E]/30 bg-[#1B0A22]/85 px-4 py-3 flex items-center justify-between gap-3 shadow-lg backdrop-blur-md">
+      <div className="w-full max-w-md rounded-xl border border-[#B98A9E]/30 bg-[#1B0A22]/96 px-4 py-3 flex items-center justify-between gap-3 shadow-lg">
         <div className="min-w-0">
           <p className="text-xs sm:text-sm font-bold text-[#F4E8D8]">
             ثبّت التطبيق على هاتفك
@@ -69,7 +69,7 @@ export function PWAInstallBanner({ compact = false }: { compact?: boolean }) {
 
       {showIOSGuide && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/82 p-4"
           onClick={() => setShowIOSGuide(false)}
         >
           <div

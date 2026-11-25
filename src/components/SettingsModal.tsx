@@ -26,18 +26,18 @@ export function SettingsModal({
   onToggleCandleMode,
   onToggleSfx,
 }: SettingsModalProps) {
-  const [p1, setP1] = useState(names.partner1);
-  const [p2, setP2] = useState(names.partner2);
+  const [boy, setBoy] = useState(names.boy);
+  const [girl, setGirl] = useState(names.girl);
 
   useEffect(() => {
-    setP1(names.partner1);
-    setP2(names.partner2);
-  }, [names.partner1, names.partner2, open]);
+    setBoy(names.boy);
+    setGirl(names.girl);
+  }, [names.boy, names.girl, open]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     playTapSound();
-    onSaveNames({ partner1: p1.trim(), partner2: p2.trim() });
+    onSaveNames({ boy: boy.trim(), girl: girl.trim() });
     onClose();
   };
 
@@ -48,14 +48,15 @@ export function SettingsModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.16 }}
           onClick={onClose}
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4"
         >
           <motion.div
-            initial={{ y: 40, opacity: 0 }}
+            initial={{ y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 40, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ y: 24, opacity: 0 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
             className="w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-[#B98A9E]/30 bg-[#1B0A22] p-6 shadow-2xl text-[#F4E8D8] max-h-[90dvh] overflow-y-auto"
           >
@@ -80,27 +81,27 @@ export function SettingsModal({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-[#B98A9E] mb-1">
-                    الاسم الأول
+                    اسم الولد
                   </label>
                   <input
                     type="text"
                     maxLength={24}
-                    value={p1}
-                    onChange={(e) => setP1(e.target.value)}
-                    placeholder="اختياري"
+                    value={boy}
+                    onChange={(e) => setBoy(e.target.value)}
+                    placeholder="مثال: أحمد"
                     className="w-full min-h-[42px] rounded-lg border border-[#B98A9E]/30 bg-[#120618] px-3 py-2 text-sm text-[#F4E8D8] focus:outline-none focus:border-[#FF4D8D]"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-[#B98A9E] mb-1">
-                    الاسم الثاني
+                    اسم البنت
                   </label>
                   <input
                     type="text"
                     maxLength={24}
-                    value={p2}
-                    onChange={(e) => setP2(e.target.value)}
-                    placeholder="اختياري"
+                    value={girl}
+                    onChange={(e) => setGirl(e.target.value)}
+                    placeholder="مثال: سارة"
                     className="w-full min-h-[42px] rounded-lg border border-[#B98A9E]/30 bg-[#120618] px-3 py-2 text-sm text-[#F4E8D8] focus:outline-none focus:border-[#FF4D8D]"
                   />
                 </div>

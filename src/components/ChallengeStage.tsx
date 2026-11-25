@@ -24,7 +24,6 @@ interface ChallengeStageProps {
   challenge: Challenge;
   displayText: string;
   displayBackNote?: string;
-  turnDisplayName?: string;
   remainingSeconds: number;
   totalSeconds: number;
   timerFinished: boolean;
@@ -61,7 +60,6 @@ export function ChallengeStage({
   challenge,
   displayText,
   displayBackNote = '',
-  turnDisplayName,
   remainingSeconds,
   totalSeconds,
   timerFinished,
@@ -88,6 +86,7 @@ export function ChallengeStage({
 
   const noteContainerRef = useRef<HTMLDivElement | null>(null);
   const noteTextRef = useRef<HTMLParagraphElement | null>(null);
+  const lastFitSigRef = useRef<string>('');
   const [fittedFontPx, setFittedFontPx] = useState<number>(28);
   const [needsInnerScroll, setNeedsInnerScroll] = useState(false);
 
@@ -136,7 +135,12 @@ export function ChallengeStage({
     if (!container || !textEl) return;
 
     const availHeight = container.clientHeight;
+    const availWidth = container.clientWidth;
     if (availHeight <= 24) return;
+
+    const sig = `${displayText}|${showPolaroid}|${previewMode}|${availWidth}|${availHeight}`;
+    if (lastFitSigRef.current === sig) return;
+    lastFitSigRef.current = sig;
 
     const isWide = typeof window !== 'undefined' && window.innerWidth >= 1024;
     const minPx = previewMode ? 16 : 18;
@@ -168,11 +172,11 @@ export function ChallengeStage({
     textEl.style.fontSize = `${best}px`;
     setFittedFontPx(best);
     setNeedsInnerScroll(textEl.scrollHeight > availHeight + 2);
-  }, [previewMode, showPolaroid]);
+  }, [displayText, previewMode, showPolaroid]);
 
   useLayoutEffect(() => {
     recomputeTextFit();
-  }, [displayText, showPolaroid, recomputeTextFit]);
+  }, [recomputeTextFit]);
 
   useEffect(() => {
     const container = noteContainerRef.current;
@@ -203,7 +207,7 @@ export function ChallengeStage({
           ? { duration: 0.22, repeat: Infinity, ease: 'easeInOut' }
           : { duration: 0.2 }
       }
-      className={`relative w-full rounded-[18px] border bg-[#190A20]/84 p-4 sm:p-6 lg:px-10 lg:py-[clamp(0.75rem,1.8vh,1.5rem)] shadow-[0_28px_72px_-16px_rgba(0,0,0,0.9)] backdrop-blur-md flex flex-col justify-between transition-colors ${
+      className={`relative w-full rounded-[18px] border bg-[#190A20]/94 p-4 sm:p-6 lg:px-10 lg:py-[clamp(0.75rem,1.8vh,1.5rem)] shadow-[0_28px_72px_-16px_rgba(0,0,0,0.9)] flex flex-col justify-between transition-colors ${
         previewMode
           ? 'min-h-[460px]'
           : 'min-h-[500px] lg:h-full lg:min-h-0'
@@ -302,18 +306,12 @@ export function ChallengeStage({
           )}
         </div>
 
-        {/* Center Strip on Desktop: Turn · Heat · Comfort */}
+        {/* Center Strip on Desktop: Heat · Comfort */}
         <div
           dir="rtl"
           className="order-3 lg:order-2 w-full lg:w-auto flex items-center justify-between lg:justify-center gap-3 px-1 pt-1 lg:pt-1.5"
         >
           <div className="flex items-center gap-2 text-xs sm:text-sm text-[#B98A9E]">
-            {turnDisplayName && (
-              <>
-                <span className="font-bold text-[#F4E8D8]">دور: {turnDisplayName}</span>
-                <span aria-hidden="true">·</span>
-              </>
-            )}
             <span className="font-semibold" style={{ color: heatMeta.color }}>
               {heatMeta.label}
             </span>
@@ -638,14 +636,7 @@ export function ChallengeStage({
                 timerFinished && hasTimer
                   ? prefersReducedMotion
                     ? { opacity: [1, 0.85, 1] }
-                    : {
-                        scale: [1, 1.025, 1],
-                        boxShadow: [
-                          '0 12px 26px -6px rgba(255,77,141,0.52)',
-                          '0 14px 36px -2px rgba(255,122,61,0.75)',
-                          '0 12px 26px -6px rgba(255,77,141,0.52)',
-                        ],
-                      }
+                    : { scale: [1, 1.025, 1] }
                   : inTension
                     ? prefersReducedMotion
                       ? { opacity: [1, 0.72, 1] }
