@@ -17,7 +17,9 @@ export interface SongPlayerState {
   errorMessage: string | null;
   userVolume: number;
   userMuted: boolean;
+  challengeVolume: number;
   fadeFactor: number;
+  endedSeq: number;
 }
 
 type StateListener = (state: SongPlayerState) => void;
@@ -40,7 +42,9 @@ let state: SongPlayerState = {
   errorMessage: null,
   userVolume: 1,
   userMuted: false,
+  challengeVolume: 1,
   fadeFactor: 1,
+  endedSeq: 0,
 };
 
 function emit(partial: Partial<SongPlayerState>) {
@@ -51,7 +55,9 @@ function emit(partial: Partial<SongPlayerState>) {
 
 function applyEffectiveVolume(audio: HTMLAudioElement): boolean {
   const target =
-    (state.userMuted ? 0 : state.userVolume) * Math.max(0, Math.min(1, state.fadeFactor));
+    (state.userMuted ? 0 : state.userVolume) *
+    Math.max(0, Math.min(1, state.challengeVolume)) *
+    Math.max(0, Math.min(1, state.fadeFactor));
   const clamped = Math.max(0, Math.min(1, target));
   try {
     const probe = clamped === 1 ? 0.99 : clamped;
@@ -116,6 +122,7 @@ function getSharedAudio(): HTMLAudioElement {
       status: 'ended',
       currentTime: audio.duration || state.duration || 0,
       isBuffering: false,
+      endedSeq: state.endedSeq + 1,
     });
   });
 
@@ -223,6 +230,15 @@ export function setSongVolume(fadeVolume: number): boolean {
   return applyEffectiveVolume(audio);
 }
 
+export function setChallengeBaseVolume(volume: number): void {
+  const clamped = Number.isFinite(volume) ? Math.max(0.05, Math.min(1, volume)) : 1;
+  state = { ...state, challengeVolume: clamped };
+  if (sharedAudio) {
+    applyEffectiveVolume(sharedAudio);
+  }
+  listeners.forEach((cb) => cb(state));
+}
+
 /**
  * Sets the user's turntable volume (0..1).
  */
@@ -291,6 +307,7 @@ export function stopAndReleaseSong(): void {
     duration: 0,
     isBuffering: false,
     errorMessage: null,
+    challengeVolume: 1,
     fadeFactor: 1,
   });
 }

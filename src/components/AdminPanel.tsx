@@ -17,8 +17,11 @@ import {
   Music,
   Play,
   Plus,
+  Settings,
+  Shuffle,
   Square,
   Trash2,
+  Volume2,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -40,30 +43,44 @@ import {
   type CategoryId,
   type Challenge,
   type ChallengeInput,
+  type ChallengeSong,
   type HeatLevel,
+  type SavedSong,
+  type SongCategory,
 } from '../types';
 import { detectMediaKind, getMediaKindLabel } from '../utils/mediaType';
+import { getChallengeManualSongs, resolveChallengePlaylist } from '../utils/playlist';
 import { formatChallengeText } from '../utils/preferences';
 import { resolveSongTitle } from '../utils/songTitle';
 import { formatPlayerTime, playTapSound } from '../utils/sound';
+import { AdminSongsSettings } from './AdminSongsSettings';
 import { ChallengeStage } from './ChallengeStage';
 
 interface AdminPanelProps {
   challenges: Challenge[];
+  songCategories: SongCategory[];
+  savedSongs: SavedSong[];
   loading: boolean;
   onExit: () => void;
 }
 
+type AdminTab = 'challenges' | 'settings';
 type FilterOption = 'all' | CategoryId;
 type EditorSectionKey = 'text' | 'media' | 'audio' | 'time' | 'backNote';
+
+interface FormSongRow {
+  url: string;
+  title: string;
+}
 
 interface FormState {
   category: CategoryId;
   text: string;
   imageUrl: string;
   backNote: string;
-  audioUrl: string;
-  songTitle: string;
+  songs: FormSongRow[];
+  audioCategoryId: string;
+  audioVolume: number;
   timerMinutes: string;
   heat: HeatLevel;
   order: string;
@@ -96,8 +113,9 @@ function createInitialForm(
     text: '',
     imageUrl: '',
     backNote: '',
-    audioUrl: '',
-    songTitle: '',
+    songs: [{ url: '', title: '' }],
+    audioCategoryId: '',
+    audioVolume: 1,
     timerMinutes: '',
     heat: 'warm',
     order: String(nextOrder),
@@ -225,6 +243,7 @@ interface ChallengeAdminRowProps {
   item: Challenge;
   idx: number;
   totalCount: number;
+  songCategories: SongCategory[];
   isEditingThis: boolean;
   onToggleActive: (c: Challenge) => void;
   onMove: (idx: number, dir: -1 | 1) => void;
@@ -239,6 +258,7 @@ function ChallengeAdminRow({
   item,
   idx,
   totalCount,
+  songCategories,
   isEditingThis,
   onToggleActive,
   onMove,
@@ -251,6 +271,10 @@ function ChallengeAdminRow({
   const dragControls = useDragControls();
   const meta = getCategoryMeta(item.category);
   const heatMeta = getHeatMeta(normalizeHeat(item.heat));
+  const manualSongs = getChallengeManualSongs(item);
+  const linkedSongCat = item.audioCategoryId
+    ? songCategories.find((sc) => sc.id === item.audioCategoryId)
+    : undefined;
 
   return (
     <Reorder.Item
@@ -309,10 +333,19 @@ function ChallengeAdminRow({
                 <span>ملاحظة</span>
               </>
             )}
-            {item.audioUrl && (
+            {(manualSongs.length > 0 || linkedSongCat) && (
               <>
                 <span aria-hidden="true">·</span>
-                <span className="text-[#FF4D8D]">أغنية</span>
+                <span className="text-[#FF4D8D]">
+                  {linkedSongCat
+                    ? `قسم: ${linkedSongCat.name}`
+                    : manualSongs.length > 1
+                      ? `${manualSongs.length} أغاني`
+                      : 'أغنية'}
+                  {typeof item.audioVolume === 'number' && item.audioVolume < 0.99
+                    ? ` (${Math.round(item.audioVolume * 100)}%)`
+                    : ''}
+                </span>
               </>
             )}
           </div>
@@ -413,7 +446,14 @@ function ChallengeAdminRow({
   );
 }
 
-export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
+export function AdminPanel({
+  challenges,
+  songCategories,
+  savedSongs,
+  loading,
+  onExit,
+}: AdminPanelProps) {
+  const [adminTab, setAdminTab] = useState<AdminTab>('challenges');
   const [filter, setFilter] = useState<FilterOption>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [mobileEditorOpen, setMobileEditorOpen] = useState(false);
@@ -433,7 +473,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
 
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [uploadingAudioTrackIdx, setUploadingAudioTrackIdx] = useState<number | null>(null);
   const [deleteDialogTarget, setDeleteDialogTarget] = useState<Challenge | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -453,6 +493,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
   const isDraggingRef = useRef(false);
 
   const testAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [testTrackIdx, setTestTrackIdx] = useState<number | null>(null);
   const [testStatus, setTestStatus] = useState<
     'idle' | 'loading' | 'playing' | 'error'
   >('idle');
@@ -462,6 +503,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
   const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const audioInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingUploadTrackIdxRef = useRef<number>(0);
 
   // Auto-dismiss toast after 4.5s
   useEffect(() => {
@@ -478,10 +520,21 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
       testAudioRef.current.load();
       testAudioRef.current = null;
     }
+    setTestTrackIdx(null);
     setTestStatus('idle');
     setTestDuration(0);
     setTestError(null);
   };
+
+  useEffect(() => {
+    if (testAudioRef.current) {
+      try {
+        testAudioRef.current.volume = Math.max(0.05, Math.min(1, form.audioVolume));
+      } catch {
+        // Ignore on iOS read-only volume
+      }
+    }
+  }, [form.audioVolume]);
 
   useEffect(() => {
     return () => {
@@ -535,26 +588,33 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
     });
   };
 
-  const handleTestPlay = async () => {
+  const handleTestPlay = async (trackIdx: number) => {
     playTapSound();
-    if (testStatus === 'playing' || testStatus === 'loading') {
+    if (testTrackIdx === trackIdx && (testStatus === 'playing' || testStatus === 'loading')) {
       stopTestAudio();
       return;
     }
 
-    const url = form.audioUrl;
+    const url = form.songs[trackIdx]?.url ?? '';
     if (!url || !/^https?:\/\//i.test(url)) {
+      setTestTrackIdx(trackIdx);
       setTestStatus('error');
       setTestError('يجب أن يبدأ رابط الأغنية بـ http:// أو https://');
       return;
     }
 
     stopTestAudio();
+    setTestTrackIdx(trackIdx);
     setTestStatus('loading');
     setTestError(null);
 
     const audio = new Audio();
     audio.preload = 'auto';
+    try {
+      audio.volume = Math.max(0.05, Math.min(1, form.audioVolume));
+    } catch {
+      // Ignore on iOS read-only volume
+    }
     audio.src = url;
     testAudioRef.current = audio;
 
@@ -566,6 +626,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
 
     audio.addEventListener('ended', () => {
       setTestStatus('idle');
+      setTestTrackIdx(null);
     });
 
     audio.addEventListener('error', () => {
@@ -584,14 +645,20 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
 
   const previewChallenge: Challenge = useMemo(() => {
     const parsedMinutes = form.timerMinutes.trim() ? Number(form.timerMinutes) : null;
+    const validManualSongs: ChallengeSong[] = form.songs
+      .filter((s) => s.url.length > 0)
+      .map((s) => ({ url: s.url, title: s.title.trim() }));
     return {
       id: editingId ?? 'preview',
       category: form.category,
       text: form.text,
       imageUrl: form.imageUrl,
       backNote: form.backNote,
-      audioUrl: form.audioUrl,
-      songTitle: form.songTitle,
+      audioUrl: validManualSongs[0]?.url ?? '',
+      songTitle: validManualSongs[0]?.title ?? '',
+      songs: validManualSongs,
+      audioCategoryId: form.audioCategoryId,
+      audioVolume: form.audioVolume,
       timerMinutes:
         parsedMinutes && Number.isFinite(parsedMinutes) && parsedMinutes > 0
           ? parsedMinutes
@@ -602,6 +669,11 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
       createdAt: Date.now(),
     };
   }, [editingId, form]);
+
+  const previewPlaylist = useMemo(
+    () => resolveChallengePlaylist(previewChallenge, savedSongs),
+    [previewChallenge, savedSongs]
+  );
 
   const previewDisplayText = useMemo(
     () =>
@@ -656,13 +728,23 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
     playTapSound();
     stopTestAudio();
     setEditingId(challenge.id);
+    const manualSongs = getChallengeManualSongs(challenge);
+    const formSongs: FormSongRow[] =
+      manualSongs.length > 0
+        ? manualSongs.map((s) => ({ url: s.url, title: s.title ?? '' }))
+        : [{ url: '', title: '' }];
+
     setForm({
       category: challenge.category,
       text: challenge.text,
       imageUrl: challenge.imageUrl ?? '',
       backNote: challenge.backNote ?? '',
-      audioUrl: challenge.audioUrl ?? '',
-      songTitle: challenge.songTitle ?? '',
+      songs: formSongs,
+      audioCategoryId: challenge.audioCategoryId ?? '',
+      audioVolume:
+        typeof challenge.audioVolume === 'number' && Number.isFinite(challenge.audioVolume)
+          ? Math.max(0.05, Math.min(1, challenge.audioVolume))
+          : 1,
       timerMinutes:
         typeof challenge.timerMinutes === 'number' && challenge.timerMinutes > 0
           ? String(challenge.timerMinutes)
@@ -675,7 +757,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
     setOpenSections({
       text: true,
       media: Boolean(challenge.imageUrl?.trim()),
-      audio: Boolean(challenge.audioUrl?.trim() || challenge.songTitle?.trim()),
+      audio: Boolean(manualSongs.length > 0 || challenge.audioCategoryId),
       time: true,
       backNote: Boolean(challenge.backNote?.trim()),
     });
@@ -694,13 +776,17 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
       if (subsequent.length > 0) {
         await reorderChallenges(subsequent);
       }
+      const manualSongs = getChallengeManualSongs(item);
       await addChallenge({
         category: item.category,
         text: item.text,
         imageUrl: item.imageUrl ?? '',
         backNote: item.backNote ?? '',
-        audioUrl: item.audioUrl ?? '',
-        songTitle: item.songTitle ?? '',
+        audioUrl: manualSongs[0]?.url ?? '',
+        songTitle: manualSongs[0]?.title ?? '',
+        songs: manualSongs,
+        audioCategoryId: item.audioCategoryId ?? '',
+        audioVolume: item.audioVolume ?? 1,
         timerMinutes: item.timerMinutes ?? null,
         heat: normalizeHeat(item.heat),
         order: item.order + 1,
@@ -741,11 +827,20 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
     e.target.value = '';
     if (!file) return;
 
-    setUploadingAudio(true);
+    const targetIdx = pendingUploadTrackIdxRef.current;
+    setUploadingAudioTrackIdx(targetIdx);
     setStatusMessage(null);
     try {
       const url = await uploadAudio(file);
-      setForm((prev) => ({ ...prev, audioUrl: url }));
+      setForm((prev) => {
+        const nextSongs = [...prev.songs];
+        if (!nextSongs[targetIdx]) {
+          nextSongs[targetIdx] = { url, title: '' };
+        } else {
+          nextSongs[targetIdx] = { ...nextSongs[targetIdx], url };
+        }
+        return { ...prev, songs: nextSongs };
+      });
       setStatusMessage({ type: 'success', text: 'تم رفع الملف الصوتي بنجاح.' });
     } catch (err) {
       setStatusMessage({
@@ -753,7 +848,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
         text: err instanceof Error ? err.message : 'تعذر رفع الملف الصوتي.',
       });
     } finally {
-      setUploadingAudio(false);
+      setUploadingAudioTrackIdx(null);
     }
   };
 
@@ -767,13 +862,16 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
       return;
     }
 
-    if (form.audioUrl !== '' && !/^https?:\/\//i.test(form.audioUrl)) {
-      setOpenSections((prev) => ({ ...prev, audio: true }));
-      setStatusMessage({
-        type: 'error',
-        text: 'رابط الأغنية يجب أن يبدأ بـ http:// أو https://',
-      });
-      return;
+    const nonEmptySongs = form.songs.filter((s) => s.url !== '');
+    for (const track of nonEmptySongs) {
+      if (!/^https?:\/\//i.test(track.url)) {
+        setOpenSections((prev) => ({ ...prev, audio: true }));
+        setStatusMessage({
+          type: 'error',
+          text: 'كل روابط الأغاني يجب أن تبدأ بـ http:// أو https://',
+        });
+        return;
+      }
     }
 
     if (form.imageUrl !== '' && !/^https?:\/\//i.test(form.imageUrl)) {
@@ -798,14 +896,22 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
       return;
     }
 
+    const cleanSongs: ChallengeSong[] = nonEmptySongs.map((s) => ({
+      url: s.url,
+      title: s.title.trim().slice(0, 120),
+    }));
+
     const parsedOrder = Number(form.order);
     const payload: ChallengeInput = {
       category: form.category,
       text: form.text.trim(),
       imageUrl: form.imageUrl,
       backNote: form.backNote.trim().slice(0, 300),
-      audioUrl: form.audioUrl,
-      songTitle: form.songTitle.trim().slice(0, 120),
+      audioUrl: cleanSongs[0]?.url ?? '',
+      songTitle: cleanSongs[0]?.title ?? '',
+      songs: cleanSongs,
+      audioCategoryId: form.audioCategoryId.trim(),
+      audioVolume: Math.max(0.05, Math.min(1, form.audioVolume)),
       timerMinutes: parsedTimer,
       heat: form.heat,
       order:
@@ -850,6 +956,9 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
       backNote: '',
       audioUrl: '',
       songTitle: '',
+      songs: [],
+      audioCategoryId: '',
+      audioVolume: 1,
       timerMinutes: row.timerMinutes,
       heat: row.heat,
       order: baseOrder + idx + 1,
@@ -1011,6 +1120,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
           <div className="p-3 pt-1 border-t border-[#B98A9E]/15">
             <ChallengeStage
               challenge={previewChallenge}
+              playlist={previewPlaylist}
               displayText={previewDisplayText}
               displayBackNote={previewDisplayBackNote}
               remainingSeconds={previewSeconds}
@@ -1146,11 +1256,28 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
         </div>
       </CollapsibleSection>
 
-      {/* Section 3: الأغنية (Link + Test Play + Upload) */}
+      {/* Section 3: الأغنية وقائمة التشغيل */}
       <CollapsibleSection
-        title="الأغنية"
-        subtitle={form.audioUrl.trim() ? 'مرتبطة بأغنية' : 'اختياري'}
-        badge={testDuration > 0 ? formatPlayerTime(testDuration) : null}
+        title="الأغاني والصوت"
+        subtitle={
+          (() => {
+            const filledCount = form.songs.filter((s) => s.url.trim()).length;
+            const cat = form.audioCategoryId
+              ? songCategories.find((c) => c.id === form.audioCategoryId)
+              : null;
+            const parts: string[] = [];
+            if (cat) parts.push(`قسم عشوائي: ${cat.name}`);
+            if (filledCount > 0) parts.push(`${filledCount} أغنية بالترتيب`);
+            return parts.length > 0 ? parts.join(' · ') : 'اختياري';
+          })()
+        }
+        badge={
+          testDuration > 0
+            ? formatPlayerTime(testDuration)
+            : form.audioVolume < 0.99
+              ? `صوت ${Math.round(form.audioVolume * 100)}%`
+              : null
+        }
         open={openSections.audio}
         onToggle={() => toggleSection('audio')}
       >
@@ -1162,98 +1289,318 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
           className="hidden"
         />
 
-        <div className="flex flex-col gap-2.5">
-          <div>
-            <label className="block text-xs font-semibold text-[#B98A9E] mb-1">
-              رابط الأغنية المباشر
-            </label>
+        <div className="space-y-4">
+          {/* Challenge Song Volume Control */}
+          <div className="rounded-xl border border-[#B98A9E]/20 bg-[#120618]/85 p-3 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F4E8D8]">
+                <Volume2 className="h-4 w-4 text-[#FF7A3D]" />
+                <span>درجة صوت الأغنية في هذا التحدي</span>
+              </span>
+              <span className="px-2 py-0.5 rounded bg-[#FF7A3D]/15 border border-[#FF7A3D]/35 text-xs font-bold text-[#FF7A3D] tabular-nums">
+                {Math.round(form.audioVolume * 100)}%
+              </span>
+            </div>
+
             <input
-              type="text"
-              dir="ltr"
-              value={form.audioUrl}
-              onChange={(e) => {
-                stopTestAudio();
-                setForm((prev) => ({ ...prev, audioUrl: e.target.value }));
-              }}
-              placeholder="https://res.cloudinary.com/.../song.mp3"
-              className="w-full min-h-[48px] rounded-lg border border-[#B98A9E]/30 bg-[#120618] px-3.5 py-2 text-base text-[#F4E8D8] placeholder:text-[#B98A9E]/40 focus:outline-none focus:border-[#FF4D8D]"
+              type="range"
+              min={0.05}
+              max={1}
+              step={0.05}
+              value={form.audioVolume}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, audioVolume: Number(e.target.value) }))
+              }
+              aria-label="درجة صوت الأغنية في التحدي"
+              className="w-full accent-[#FF7A3D] cursor-pointer"
             />
-            {(form.audioUrl.trim() || form.songTitle.trim()) && (
-              <div className="mt-1.5 flex items-center justify-between gap-2 rounded-lg border border-[#B98A9E]/20 bg-[#120618]/80 px-3 py-1.5 text-xs">
-                <span className="text-[#B98A9E] shrink-0">العنوان على المشغل:</span>
-                <span
-                  dir="auto"
-                  className="font-bold text-[#F4E8D8] truncate"
-                >
-                  {resolveSongTitle(form.songTitle, form.audioUrl)}
+
+            <div className="flex flex-wrap gap-1.5">
+              {[0.25, 0.5, 0.75, 1].map((preset) => {
+                const active = Math.abs(form.audioVolume - preset) < 0.03;
+                return (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => {
+                      playTapSound();
+                      setForm((prev) => ({ ...prev, audioVolume: preset }));
+                    }}
+                    className={`min-h-[34px] px-2.5 rounded-lg border text-[11px] font-bold tabular-nums cursor-pointer ${
+                      active
+                        ? 'border-[#FF7A3D] bg-[#FF7A3D]/25 text-[#F4E8D8]'
+                        : 'border-[#B98A9E]/20 bg-[#1B0A22] text-[#B98A9E] hover:text-[#F4E8D8]'
+                    }`}
+                  >
+                    {Math.round(preset * 100)}%
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Saved Song Category Picker (Random Order) */}
+          <div className="rounded-xl border border-[#FF4D8D]/25 bg-[#120618]/85 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <label className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F4E8D8]">
+                <Shuffle className="h-3.5 w-3.5 text-[#FF4D8D]" />
+                <span>إضافة قسم كامل من الأغاني المحفوظة (ترتيب عشوائي)</span>
+              </label>
+            </div>
+
+            {songCategories.length === 0 ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-dashed border-[#B98A9E]/25 bg-[#1B0A22]/70 px-3 py-2.5">
+                <span className="text-xs text-[#B98A9E]">
+                  لا توجد أقسام أغاني محفوظة في الإعدادات بعد.
                 </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playTapSound();
+                    stopTestAudio();
+                    setMobileEditorOpen(false);
+                    setAdminTab('settings');
+                  }}
+                  className="min-h-[36px] px-3 rounded-lg border border-[#FF7A3D]/45 bg-[#FF7A3D]/15 text-xs font-bold text-[#F4E8D8] cursor-pointer shrink-0"
+                >
+                  فتح الإعدادات
+                </button>
               </div>
+            ) : (
+              <>
+                <select
+                  value={form.audioCategoryId}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, audioCategoryId: e.target.value }))
+                  }
+                  className="w-full min-h-[46px] rounded-lg border border-[#B98A9E]/30 bg-[#1B0A22] px-3 py-2 text-sm text-[#F4E8D8] focus:outline-none focus:border-[#FF4D8D]"
+                >
+                  <option value="">بدون قسم محفوظ</option>
+                  {songCategories.map((cat) => {
+                    const count = savedSongs.filter((s) => s.categoryId === cat.id).length;
+                    return (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name} ({count} أغنية)
+                      </option>
+                    );
+                  })}
+                </select>
+                {form.audioCategoryId && (
+                  <p className="text-[11px] text-[#B98A9E]">
+                    {savedSongs.filter((s) => s.categoryId === form.audioCategoryId).length === 0
+                      ? 'تنبيه: هذا القسم فارغ حالياً — أضف أغاني له من تبويب الإعدادات.'
+                      : 'عند بدء التحدي، تُشغَّل جميع أغاني هذا القسم بترتيب عشوائي تلقائياً.'}
+                  </p>
+                )}
+              </>
             )}
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-[#B98A9E] mb-1">
-              اسم الأغنية (اختياري — يُستخرج تلقائياً إن تُرك فارغاً)
-            </label>
-            <input
-              type="text"
-              dir="auto"
-              maxLength={120}
-              value={form.songTitle}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, songTitle: e.target.value }))
-              }
-              placeholder="مثال: تملي معاك - عمرو دياب"
-              className="w-full min-h-[46px] rounded-lg border border-[#B98A9E]/30 bg-[#120618] px-3.5 py-2 text-base text-[#F4E8D8] placeholder:text-[#B98A9E]/40 focus:outline-none focus:border-[#FF4D8D]"
-            />
-          </div>
+          {/* Manual Sequential Songs List */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-bold text-[#B98A9E]">
+                أغاني محددة لهذا التحدي (تشتغل بالترتيب 1، 2، 3...)
+              </span>
+              <span className="text-[11px] text-[#B98A9E]/75 tabular-nums">
+                {form.songs.length} خانات
+              </span>
+            </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+            {form.songs.map((track, idx) => {
+              const isThisTesting = testTrackIdx === idx;
+              const isThisUploading = uploadingAudioTrackIdx === idx;
+
+              return (
+                <div
+                  key={idx}
+                  className="rounded-xl border border-[#B98A9E]/25 bg-[#120618]/90 p-3 space-y-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-[#FF7A3D] tabular-nums">
+                      أغنية #{idx + 1}
+                    </span>
+
+                    <div className="flex items-center gap-1">
+                      {form.songs.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => {
+                              playTapSound();
+                              stopTestAudio();
+                              setForm((prev) => {
+                                const next = [...prev.songs];
+                                [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                                return { ...prev, songs: next };
+                              });
+                            }}
+                            aria-label="تحريك للأعلى"
+                            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg border border-[#B98A9E]/20 text-[#B98A9E] hover:text-[#F4E8D8] disabled:opacity-30 cursor-pointer"
+                          >
+                            <ArrowUp className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === form.songs.length - 1}
+                            onClick={() => {
+                              playTapSound();
+                              stopTestAudio();
+                              setForm((prev) => {
+                                const next = [...prev.songs];
+                                [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+                                return { ...prev, songs: next };
+                              });
+                            }}
+                            aria-label="تحريك للأسفل"
+                            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg border border-[#B98A9E]/20 text-[#B98A9E] hover:text-[#F4E8D8] disabled:opacity-30 cursor-pointer"
+                          >
+                            <ArrowDown className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      )}
+
+                      {(form.songs.length > 1 || track.url || track.title) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playTapSound();
+                            if (isThisTesting) stopTestAudio();
+                            setForm((prev) => {
+                              if (prev.songs.length <= 1) {
+                                return { ...prev, songs: [{ url: '', title: '' }] };
+                              }
+                              return {
+                                ...prev,
+                                songs: prev.songs.filter((_, i) => i !== idx),
+                              };
+                            });
+                          }}
+                          aria-label="حذف الأغنية من التحدي"
+                          className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg border border-[#FF4D8D]/25 text-[#FF4D8D] hover:bg-[#FF4D8D]/15 cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={track.url}
+                    onChange={(e) => {
+                      if (isThisTesting) stopTestAudio();
+                      const val = e.target.value;
+                      setForm((prev) => ({
+                        ...prev,
+                        songs: prev.songs.map((s, i) =>
+                          i === idx ? { ...s, url: val } : s
+                        ),
+                      }));
+                    }}
+                    placeholder="https://res.cloudinary.com/.../song.mp3"
+                    className="w-full min-h-[46px] rounded-lg border border-[#B98A9E]/30 bg-[#1B0A22] px-3 py-2 text-sm text-[#F4E8D8] placeholder:text-[#B98A9E]/40 focus:outline-none focus:border-[#FF4D8D]"
+                  />
+
+                  <input
+                    type="text"
+                    dir="auto"
+                    maxLength={120}
+                    value={track.title}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setForm((prev) => ({
+                        ...prev,
+                        songs: prev.songs.map((s, i) =>
+                          i === idx ? { ...s, title: val } : s
+                        ),
+                      }));
+                    }}
+                    placeholder="اسم الأغنية (اختياري — يُستخرج تلقائياً)"
+                    className="w-full min-h-[42px] rounded-lg border border-[#B98A9E]/25 bg-[#1B0A22] px-3 py-1.5 text-sm text-[#F4E8D8] placeholder:text-[#B98A9E]/40 focus:outline-none focus:border-[#FF4D8D]"
+                  />
+
+                  {(track.url.trim() || track.title.trim()) && (
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-[#B98A9E]/15 bg-[#1B0A22]/80 px-2.5 py-1 text-[11px]">
+                      <span className="text-[#B98A9E] shrink-0">على المشغل:</span>
+                      <span dir="auto" className="font-bold text-[#F4E8D8] truncate">
+                        {resolveSongTitle(track.title, track.url)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleTestPlay(idx)}
+                      disabled={!track.url}
+                      className="flex-1 min-h-[42px] px-3 py-1.5 rounded-lg border border-[#FF4D8D]/40 bg-[#FF4D8D]/15 hover:bg-[#FF4D8D]/25 text-[#F4E8D8] text-xs font-semibold inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 whitespace-nowrap"
+                    >
+                      {isThisTesting && testStatus === 'loading' ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>جاري التحميل...</span>
+                        </>
+                      ) : isThisTesting && testStatus === 'playing' ? (
+                        <>
+                          <Square className="h-3.5 w-3.5 fill-current text-[#FF7A3D]" />
+                          <span>إيقاف</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-3.5 w-3.5 fill-current text-[#FF4D8D]" />
+                          <span>تشغيل تجريبي</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={uploadingAudioTrackIdx !== null}
+                      onClick={() => {
+                        pendingUploadTrackIdxRef.current = idx;
+                        audioInputRef.current?.click();
+                      }}
+                      className="min-h-[42px] px-3 py-1.5 rounded-lg border border-[#B98A9E]/30 bg-[#1B0A22] hover:border-[#FF7A3D]/55 text-xs text-[#B98A9E] hover:text-[#F4E8D8] inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isThisUploading ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>جاري الرفع...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Music className="h-3.5 w-3.5" />
+                          <span>رفع صوت</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {isThisTesting && testError && (
+                    <p className="text-xs text-[#FF7A3D]">{testError}</p>
+                  )}
+                </div>
+              );
+            })}
+
             <button
               type="button"
-              onClick={handleTestPlay}
-              disabled={!form.audioUrl}
-              className="flex-1 min-h-[48px] px-4 py-2 rounded-lg border border-[#FF4D8D]/45 bg-[#FF4D8D]/15 hover:bg-[#FF4D8D]/25 text-[#F4E8D8] text-sm font-semibold inline-flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-40 whitespace-nowrap"
+              onClick={() => {
+                playTapSound();
+                setForm((prev) => ({
+                  ...prev,
+                  songs: [...prev.songs, { url: '', title: '' }],
+                }));
+              }}
+              className="w-full min-h-[46px] px-4 py-2 rounded-xl border border-dashed border-[#FF7A3D]/45 bg-[#FF7A3D]/8 hover:bg-[#FF7A3D]/15 text-[#F4E8D8] text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-2 cursor-pointer"
             >
-              {testStatus === 'loading' ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>جاري التحميل...</span>
-                </>
-              ) : testStatus === 'playing' ? (
-                <>
-                  <Square className="h-4 w-4 fill-current text-[#FF7A3D]" />
-                  <span>إيقاف التجربة</span>
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4 fill-current text-[#FF4D8D]" />
-                  <span>تشغيل تجريبي</span>
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              disabled={uploadingAudio}
-              onClick={() => audioInputRef.current?.click()}
-              className="min-h-[48px] px-4 py-2 rounded-lg border border-[#B98A9E]/30 bg-[#120618] hover:border-[#FF7A3D]/55 text-xs sm:text-sm text-[#B98A9E] hover:text-[#F4E8D8] inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              {uploadingAudio ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>جاري الرفع...</span>
-                </>
-              ) : (
-                <>
-                  <Music className="h-4 w-4" />
-                  <span>رفع صوت</span>
-                </>
-              )}
+              <Plus className="h-4 w-4 text-[#FF7A3D]" />
+              <span>إضافة أغنية أخرى (تشتغل بالترتيب)</span>
             </button>
           </div>
-
-          {testError && <p className="text-xs text-[#FF7A3D]">{testError}</p>}
         </div>
       </CollapsibleSection>
 
@@ -1384,7 +1731,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
       >
         <div className="flex items-center justify-between gap-2">
           <label className="text-xs font-semibold text-[#B98A9E]">
-            نص الملاحظة (يدعم {'{name}'} و {'{partner}'})
+            نص الملاحظة (يدعم {'{ولد}'} و {'{بنت}'})
           </label>
           <span className="text-xs text-[#B98A9E]/75 tabular-nums">
             {form.backNote.length}/300
@@ -1397,7 +1744,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
           onChange={(e) =>
             setForm((prev) => ({ ...prev, backNote: e.target.value }))
           }
-          placeholder="مثال: لحظة ما تتنسيش يا {partner} ❤️ (أو اتركه لعبارة رومانسية تلقائية)"
+          placeholder="مثال: لحظة ما تتنسيش يا {بنت} ❤️ (أو اتركه لعبارة رومانسية تلقائية)"
           className="w-full rounded-lg border border-[#B98A9E]/30 bg-[#120618] px-3.5 py-2.5 text-base text-[#F4E8D8] placeholder:text-[#B98A9E]/40 focus:outline-none focus:border-[#FF4D8D] leading-relaxed"
         />
       </CollapsibleSection>
@@ -1407,7 +1754,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
         <div className="pt-2 flex items-center gap-2.5">
           <button
             type="submit"
-            disabled={saving || uploadingImage || uploadingAudio}
+            disabled={saving || uploadingImage || uploadingAudioTrackIdx !== null}
             className="flex-1 min-h-[50px] px-5 py-2.5 rounded-xl bg-gradient-to-l from-[#FF4D8D] to-[#FF7A3D] text-[#F4E8D8] font-bold text-base inline-flex items-center justify-center gap-2 shadow-lg cursor-pointer disabled:opacity-60"
           >
             {saving ? (
@@ -1482,7 +1829,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
       {/* Sticky Top Bar (Mobile-First + Clean on Desktop) */}
       <header className="sticky top-0 z-30 border-b border-[#B98A9E]/20 bg-[#14081A]/98">
         <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 py-3 space-y-2.5">
-          {/* Row 1: Back + Title + Bulk + "+ تحدي جديد" */}
+          {/* Row 1: Back + Title + Action Buttons */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <button
@@ -1500,7 +1847,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
               </button>
               <div className="min-w-0">
                 <h1 className="font-calligraphy text-xl sm:text-2xl lg:text-3xl font-bold text-[#F4E8D8] truncate">
-                  إدارة التحديات
+                  {adminTab === 'settings' ? 'إعدادات الأغاني' : 'إدارة التحديات'}
                 </h1>
               </div>
             </div>
@@ -1510,73 +1857,105 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
                 type="button"
                 onClick={() => {
                   playTapSound();
-                  setBulkOpen((v) => !v);
+                  stopTestAudio();
+                  setAdminTab((t) => (t === 'challenges' ? 'settings' : 'challenges'));
                 }}
-                aria-label="استيراد جماعي"
-                className={`min-h-[48px] px-3 sm:px-4 py-2 rounded-xl border text-xs sm:text-sm font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
-                  bulkOpen
-                    ? 'border-[#FF7A3D] bg-[#FF7A3D]/20 text-[#F4E8D8]'
-                    : 'border-[#B98A9E]/35 bg-[#1B0A22]/85 hover:border-[#FF7A3D]/60 text-[#F4E8D8]'
+                className={`min-h-[48px] px-3 sm:px-4 py-2 rounded-xl border text-xs sm:text-sm font-bold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
+                  adminTab === 'settings'
+                    ? 'border-[#FF4D8D] bg-[#FF4D8D]/20 text-[#F4E8D8]'
+                    : 'border-[#B98A9E]/35 bg-[#1B0A22]/85 hover:border-[#FF4D8D]/60 text-[#F4E8D8]'
                 }`}
               >
-                <FileSpreadsheet className="h-4 w-4 text-[#FF7A3D]" />
-                <span className="hidden sm:inline">استيراد جماعي</span>
+                {adminTab === 'settings' ? (
+                  <>
+                    <ArrowRight className="h-4 w-4 text-[#FF4D8D]" />
+                    <span>التحديات</span>
+                  </>
+                ) : (
+                  <>
+                    <Settings className="h-4 w-4 text-[#FF7A3D]" />
+                    <span>الإعدادات</span>
+                  </>
+                )}
               </button>
 
-              {/* Mobile opens Bottom Sheet; Desktop resets & focuses split-view editor */}
+              {adminTab === 'challenges' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playTapSound();
+                      setBulkOpen((v) => !v);
+                    }}
+                    aria-label="استيراد جماعي"
+                    className={`min-h-[48px] px-3 sm:px-4 py-2 rounded-xl border text-xs sm:text-sm font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
+                      bulkOpen
+                        ? 'border-[#FF7A3D] bg-[#FF7A3D]/20 text-[#F4E8D8]'
+                        : 'border-[#B98A9E]/35 bg-[#1B0A22]/85 hover:border-[#FF7A3D]/60 text-[#F4E8D8]'
+                    }`}
+                  >
+                    <FileSpreadsheet className="h-4 w-4 text-[#FF7A3D]" />
+                    <span className="hidden sm:inline">استيراد جماعي</span>
+                  </button>
+
+                  {/* Mobile opens Bottom Sheet; Desktop resets & focuses split-view editor */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playTapSound();
+                      const isMobile =
+                        typeof window !== 'undefined' && window.innerWidth < 1024;
+                      resetForm(undefined, isMobile);
+                    }}
+                    className="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl bg-gradient-to-l from-[#FF4D8D] to-[#FF7A3D] text-[#F4E8D8] font-bold text-xs sm:text-sm inline-flex items-center gap-1.5 shadow-[0_6px_18px_rgba(255,77,141,0.35)] cursor-pointer whitespace-nowrap"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>تحدي جديد</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Row 2: Night Filter inside Sticky Bar (Challenges tab only) */}
+          {adminTab === 'challenges' && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-0.5 no-scrollbar">
               <button
                 type="button"
                 onClick={() => {
                   playTapSound();
-                  const isMobile =
-                    typeof window !== 'undefined' && window.innerWidth < 1024;
-                  resetForm(undefined, isMobile);
+                  setFilter('all');
                 }}
-                className="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl bg-gradient-to-l from-[#FF4D8D] to-[#FF7A3D] text-[#F4E8D8] font-bold text-xs sm:text-sm inline-flex items-center gap-1.5 shadow-[0_6px_18px_rgba(255,77,141,0.35)] cursor-pointer whitespace-nowrap"
+                className={`min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  filter === 'all'
+                    ? 'bg-[#F4E8D8] text-[#14081A]'
+                    : 'border border-[#B98A9E]/25 bg-[#1B0A22]/85 text-[#B98A9E] hover:text-[#F4E8D8]'
+                }`}
               >
-                <Plus className="h-4 w-4" />
-                <span>تحدي جديد</span>
+                الكل ({challenges.length})
               </button>
+              {CATEGORIES.map((cat) => {
+                const count = challenges.filter((c) => c.category === cat.id).length;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      playTapSound();
+                      setFilter(cat.id);
+                    }}
+                    className={`min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                      filter === cat.id
+                        ? 'bg-[#F4E8D8] text-[#14081A]'
+                        : 'border border-[#B98A9E]/25 bg-[#1B0A22]/85 text-[#B98A9E] hover:text-[#F4E8D8]'
+                    }`}
+                  >
+                    {cat.title} ({count})
+                  </button>
+                );
+              })}
             </div>
-          </div>
-
-          {/* Row 2: Night Filter inside Sticky Bar */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-            <button
-              type="button"
-              onClick={() => {
-                playTapSound();
-                setFilter('all');
-              }}
-              className={`min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                filter === 'all'
-                  ? 'bg-[#F4E8D8] text-[#14081A]'
-                  : 'border border-[#B98A9E]/25 bg-[#1B0A22]/85 text-[#B98A9E] hover:text-[#F4E8D8]'
-              }`}
-            >
-              الكل ({challenges.length})
-            </button>
-            {CATEGORIES.map((cat) => {
-              const count = challenges.filter((c) => c.category === cat.id).length;
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => {
-                    playTapSound();
-                    setFilter(cat.id);
-                  }}
-                  className={`min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                    filter === cat.id
-                      ? 'bg-[#F4E8D8] text-[#14081A]'
-                      : 'border border-[#B98A9E]/25 bg-[#1B0A22]/85 text-[#B98A9E] hover:text-[#F4E8D8]'
-                  }`}
-                >
-                  {cat.title} ({count})
-                </button>
-              );
-            })}
-          </div>
+          )}
         </div>
       </header>
 
@@ -1590,6 +1969,15 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
             أو في إعدادات Vercel لتفعيل المزامنة السحابية عبر Firestore.
           </div>
         )}
+
+        {adminTab === 'settings' ? (
+          <AdminSongsSettings
+            categories={songCategories}
+            songs={savedSongs}
+            onStatus={setStatusMessage}
+          />
+        ) : (
+          <>
 
         {/* Bulk Import Expandable Card (Mobile-first Card Preview instead of table) */}
         {bulkOpen && (
@@ -1776,6 +2164,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
                     item={item}
                     idx={idx}
                     totalCount={orderedItems.length}
+                    songCategories={songCategories}
                     isEditingThis={editingId === item.id}
                     onToggleActive={handleToggleActive}
                     onMove={handleMove}
@@ -1817,6 +2206,8 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
             {renderEditorBody(false)}
           </div>
         </div>
+          </>
+        )}
       </div>
 
       {/* Mobile Full-Screen Bottom Sheet Editor with Sticky Save Bar (< 1024px only) */}
@@ -1870,7 +2261,7 @@ export function AdminPanel({ challenges, loading, onExit }: AdminPanelProps) {
                 <button
                   type="submit"
                   form="admin-editor-form-mobile"
-                  disabled={saving || uploadingImage || uploadingAudio}
+                  disabled={saving || uploadingImage || uploadingAudioTrackIdx !== null}
                   className="flex-1 min-h-[52px] px-5 py-3 rounded-xl bg-gradient-to-l from-[#FF4D8D] to-[#FF7A3D] text-[#F4E8D8] font-bold text-base inline-flex items-center justify-center gap-2 shadow-lg cursor-pointer disabled:opacity-60"
                 >
                   {saving ? (

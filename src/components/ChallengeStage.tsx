@@ -10,7 +10,13 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { getCategoryMeta, getHeatMeta, type Challenge } from '../types';
+import {
+  getCategoryMeta,
+  getHeatMeta,
+  type Challenge,
+  type ChallengeSong,
+} from '../types';
+import { getChallengeManualSongs } from '../utils/playlist';
 import {
   formatSecondsMMSS,
   playHoverSound,
@@ -37,6 +43,10 @@ interface ChallengeStageProps {
   canGoPrev?: boolean;
   polaroidFlipKey?: number;
   showKeyHints?: boolean;
+  playlist?: ChallengeSong[];
+  activeTrackIndex?: number;
+  onPrevTrack?: () => void;
+  onNextTrack?: () => void;
   onStart: () => void;
   onTogglePauseTimer: () => void;
   onSkip: () => void;
@@ -73,6 +83,10 @@ export function ChallengeStage({
   canGoPrev = false,
   polaroidFlipKey = 0,
   showKeyHints = false,
+  playlist,
+  activeTrackIndex = 0,
+  onPrevTrack,
+  onNextTrack,
   onStart,
   onTogglePauseTimer,
   onSkip,
@@ -90,11 +104,16 @@ export function ChallengeStage({
   const [fittedFontPx, setFittedFontPx] = useState<number>(28);
   const [needsInnerScroll, setNeedsInnerScroll] = useState(false);
 
+  const effectivePlaylist = playlist ?? getChallengeManualSongs(challenge);
+  const safeTrackIndex =
+    effectivePlaylist.length > 0
+      ? Math.max(0, Math.min(activeTrackIndex, effectivePlaylist.length - 1))
+      : 0;
+  const activeTrack = effectivePlaylist[safeTrackIndex];
+
   const hasTimer =
     typeof challenge.timerMinutes === 'number' && challenge.timerMinutes > 0;
-  const hasAudio = Boolean(
-    challenge.audioUrl && challenge.audioUrl.trim().length > 0
-  );
+  const hasAudio = effectivePlaylist.length > 0;
   const hasMedia = Boolean(
     challenge.imageUrl && challenge.imageUrl.trim().length > 0
   );
@@ -334,11 +353,15 @@ export function ChallengeStage({
 
         {/* Top-Right: Midnight Turntable */}
         <div className="order-2 lg:order-3 w-full sm:w-auto shrink-0 flex justify-end">
-          {hasAudio ? (
+          {hasAudio && activeTrack ? (
             <MusicPlayerBar
               challengeId={challenge.id}
-              audioUrl={challenge.audioUrl!}
-              songTitle={challenge.songTitle}
+              audioUrl={activeTrack.url}
+              songTitle={activeTrack.title}
+              trackIndex={safeTrackIndex}
+              totalTracks={effectivePlaylist.length}
+              onPrevTrack={onPrevTrack}
+              onNextTrack={onNextTrack}
               canGoPrev={canGoPrev}
               canGoNext={!isNextDisabled}
               onPrevChallenge={onPrevChallenge}

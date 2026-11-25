@@ -8,16 +8,19 @@ import {
   type CategoryId,
   type Challenge,
   type CoupleNames,
+  type SavedSong,
 } from '../types';
 import {
   isSongPlayingNow,
   loadSong,
   pauseSong,
   playSong,
+  setChallengeBaseVolume,
   setSongVolume,
   stopAndReleaseSong,
   subscribeSongPlayer,
 } from '../utils/audioPlayer';
+import { resolveChallengePlaylist } from '../utils/playlist';
 import {
   clearNightProgress,
   formatChallengeText,
@@ -44,6 +47,7 @@ interface ChallengeScreenProps {
   categoryId: CategoryId;
   initialDeck: Challenge[];
   allChallenges: Challenge[];
+  savedSongs: SavedSong[];
   names: CoupleNames;
   candleMode?: boolean;
   initialIndex?: number;
@@ -74,6 +78,7 @@ export function ChallengeScreen({
   categoryId,
   initialDeck,
   allChallenges,
+  savedSongs,
   names,
   candleMode = false,
   initialIndex = 0,
@@ -104,6 +109,16 @@ export function ChallengeScreen({
   const sessionStartMsRef = useRef<number>(Date.now());
   const currentChallenge = deck[currentIndex];
 
+  const [trackIndex, setTrackIndex] = useState(0);
+  const [categoryShuffleTick, setCategoryShuffleTick] = useState(0);
+
+  const resolvedPlaylist = useMemo(() => {
+    if (!currentChallenge) return [];
+    void currentIndex;
+    void categoryShuffleTick;
+    return resolveChallengePlaylist(currentChallenge, savedSongs);
+  }, [currentChallenge, savedSongs, currentIndex, categoryShuffleTick]);
+
   const totalDurationSeconds =
     typeof currentChallenge?.timerMinutes === 'number' &&
     currentChallenge.timerMinutes > 0
@@ -126,6 +141,9 @@ export function ChallengeScreen({
   const lastTensionSecRef = useRef<number | null>(null);
   const songPausedByFadeRef = useRef<boolean>(false);
   const finishClearTimerRef = useRef<number | null>(null);
+  const lastEndedSeqRef = useRef<number>(0);
+  const pendingCategoryLoopPlayRef = useRef<boolean>(false);
+  const lastPreloadedUrlRef = useRef<string>('');
 
   const tensionMaxSecond =
     totalDurationSeconds >= 8
@@ -149,17 +167,68 @@ export function ChallengeScreen({
     return () => window.clearTimeout(t);
   }, [showKeyHints]);
 
-  useEffect(() => {
-    return subscribeSongPlayer((s) => {
-      setSongIsPlaying(s.status === 'playing');
-    });
-  }, []);
-
   const hasTimer = totalDurationSeconds > 0;
   const isTimerRunning = Boolean(
     hasStarted && hasTimer && !isTimerPaused && !timerFinished && remainingSeconds > 0
   );
   useWakeLock(Boolean(currentChallenge && (isTimerRunning || songIsPlaying)));
+
+  const playlistStateRef = useRef({
+    playlist: resolvedPlaylist,
+    trackIndex,
+    audioCategoryId: currentChallenge?.audioCategoryId ?? '',
+    hasTimer,
+    timerFinished,
+    remainingSeconds,
+    fadeStartSec,
+  });
+  playlistStateRef.current = {
+    playlist: resolvedPlaylist,
+    trackIndex,
+    audioCategoryId: currentChallenge?.audioCategoryId ?? '',
+    hasTimer,
+    timerFinished,
+    remainingSeconds,
+    fadeStartSec,
+  };
+
+  useEffect(() => {
+    return subscribeSongPlayer((s) => {
+      setSongIsPlaying(s.status === 'playing');
+
+      if (s.endedSeq > lastEndedSeqRef.current) {
+        lastEndedSeqRef.current = s.endedSeq;
+        if (songPausedByFadeRef.current) return;
+
+        const cur = playlistStateRef.current;
+        if (cur.playlist.length === 0) return;
+
+        if (cur.trackIndex + 1 < cur.playlist.length) {
+          const nextIdx = cur.trackIndex + 1;
+          setTrackIndex(nextIdx);
+          void playSong(cur.playlist[nextIdx].url);
+        } else if (
+          cur.audioCategoryId &&
+          cur.hasTimer &&
+          !cur.timerFinished &&
+          cur.remainingSeconds > cur.fadeStartSec + 2
+        ) {
+          pendingCategoryLoopPlayRef.current = true;
+          setTrackIndex(0);
+          setCategoryShuffleTick((t) => t + 1);
+        }
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!pendingCategoryLoopPlayRef.current) return;
+    pendingCategoryLoopPlayRef.current = false;
+    const first = resolvedPlaylist[0];
+    if (first && !songPausedByFadeRef.current) {
+      void playSong(first.url);
+    }
+  }, [resolvedPlaylist]);
 
   useEffect(() => {
     if (deck.length === 0) return;
@@ -211,25 +280,40 @@ export function ChallengeScreen({
     setTimerFinished(false);
     setHeartBurstKey(0);
     setFinishBurstKey(0);
+    setTrackIndex(0);
+    pendingCategoryLoopPlayRef.current = false;
     endTimestampRef.current = null;
     pausedRemainingMsRef.current = secs * 1000;
     notifiedChallengeIdRef.current = null;
     lastSoftTickSecRef.current = null;
     lastTensionSecRef.current = null;
 
-    if (
-      currentChallenge.audioUrl &&
-      /^https?:\/\//i.test(currentChallenge.audioUrl)
-    ) {
-      loadSong(currentChallenge.audioUrl);
+    setChallengeBaseVolume(currentChallenge.audioVolume ?? 1);
+
+    const firstTrack = resolvedPlaylist[0];
+    if (firstTrack && /^https?:\/\//i.test(firstTrack.url)) {
+      lastPreloadedUrlRef.current = `${currentChallenge.id}:${currentIndex}:${firstTrack.url}`;
+      loadSong(firstTrack.url);
     } else {
+      lastPreloadedUrlRef.current = '';
       stopAndReleaseSong();
     }
   }, [
     currentChallenge?.id,
     currentChallenge?.timerMinutes,
-    currentChallenge?.audioUrl,
+    currentChallenge?.audioVolume,
+    currentIndex,
   ]);
+
+  useEffect(() => {
+    if (!currentChallenge || hasStarted || songIsPlaying) return;
+    const firstTrack = resolvedPlaylist[trackIndex] ?? resolvedPlaylist[0];
+    if (!firstTrack || !/^https?:\/\//i.test(firstTrack.url)) return;
+    const key = `${currentChallenge.id}:${currentIndex}:${firstTrack.url}`;
+    if (lastPreloadedUrlRef.current === key) return;
+    lastPreloadedUrlRef.current = key;
+    loadSong(firstTrack.url);
+  }, [currentChallenge, currentIndex, resolvedPlaylist, trackIndex, hasStarted, songIsPlaying]);
 
   useEffect(() => {
     return () => {
@@ -378,14 +462,31 @@ export function ChallengeScreen({
       endTimestampRef.current = Date.now() + pausedRemainingMsRef.current;
     }
 
-    if (
-      currentChallenge.audioUrl &&
-      /^https?:\/\//i.test(currentChallenge.audioUrl)
-    ) {
+    const track = resolvedPlaylist[trackIndex] ?? resolvedPlaylist[0];
+    if (track && /^https?:\/\//i.test(track.url)) {
       songPausedByFadeRef.current = false;
-      void playSong(currentChallenge.audioUrl);
+      setChallengeBaseVolume(currentChallenge.audioVolume ?? 1);
+      void playSong(track.url);
     }
-  }, [currentChallenge, hasStarted, totalDurationSeconds]);
+  }, [currentChallenge, hasStarted, totalDurationSeconds, resolvedPlaylist, trackIndex]);
+
+  const handleSelectTrack = useCallback(
+    (nextIndex: number) => {
+      if (nextIndex < 0 || nextIndex >= resolvedPlaylist.length) return;
+      const track = resolvedPlaylist[nextIndex];
+      if (!track) return;
+      const wasPlaying = isSongPlayingNow() || hasStarted;
+      setTrackIndex(nextIndex);
+      songPausedByFadeRef.current = false;
+      setChallengeBaseVolume(currentChallenge?.audioVolume ?? 1);
+      if (wasPlaying) {
+        void playSong(track.url);
+      } else {
+        loadSong(track.url);
+      }
+    },
+    [resolvedPlaylist, hasStarted, currentChallenge?.audioVolume]
+  );
 
   const handleTogglePauseTimer = useCallback(() => {
     playTapSound();
@@ -521,7 +622,7 @@ export function ChallengeScreen({
     }
   };
 
-  const hasAudio = Boolean(currentChallenge?.audioUrl?.trim());
+  const hasAudio = resolvedPlaylist.length > 0;
   const showStartArea = hasTimer || hasAudio;
   const isNextDisabled = hasTimer && remainingSeconds > 0;
   const showPolaroid = Boolean(
@@ -817,6 +918,10 @@ export function ChallengeScreen({
                 canGoPrev={currentIndex > 0}
                 polaroidFlipKey={polaroidFlipKey}
                 showKeyHints={showKeyHints}
+                playlist={resolvedPlaylist}
+                activeTrackIndex={trackIndex}
+                onPrevTrack={() => handleSelectTrack(trackIndex - 1)}
+                onNextTrack={() => handleSelectTrack(trackIndex + 1)}
                 onStart={handleStart}
                 onTogglePauseTimer={handleTogglePauseTimer}
                 onSkip={() => advance(true)}

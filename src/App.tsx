@@ -14,6 +14,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { SoundToggle } from './components/SoundToggle';
 import { isEnvConfigured, missingRequiredEnvVars } from './config/env';
 import { subscribeChallenges } from './services/challengesService';
+import { subscribeSavedSongs, subscribeSongCategories } from './services/songsService';
 
 const AdminPanel = lazy(() =>
   import('./components/AdminPanel').then((mod) => ({ default: mod.AdminPanel }))
@@ -23,6 +24,8 @@ import {
   type Challenge,
   type CoupleNames,
   type SavedNightProgress,
+  type SavedSong,
+  type SongCategory,
 } from './types';
 import {
   clearNightProgress,
@@ -68,6 +71,8 @@ export default function App() {
   });
 
   const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [songCategories, setSongCategories] = useState<SongCategory[]>([]);
+  const [savedSongs, setSavedSongs] = useState<SavedSong[]>([]);
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
 
@@ -128,7 +133,14 @@ export default function App() {
       }
     );
 
-    return () => unsubscribe();
+    const unsubCategories = subscribeSongCategories(setSongCategories);
+    const unsubSongs = subscribeSavedSongs(setSavedSongs);
+
+    return () => {
+      unsubscribe();
+      unsubCategories();
+      unsubSongs();
+    };
   }, []);
 
   const handleConfirmAge = () => {
@@ -305,6 +317,7 @@ export default function App() {
             categoryId={sessionConfig.categoryId}
             initialDeck={sessionConfig.deck}
             allChallenges={challenges}
+            savedSongs={savedSongs}
             names={coupleNames}
             candleMode={candleMode}
             initialIndex={sessionConfig.initialIndex}
@@ -344,6 +357,8 @@ export default function App() {
             <AdminPanel
               key="admin"
               challenges={challenges}
+              songCategories={songCategories}
+              savedSongs={savedSongs}
               loading={loading}
               onExit={() => setScreen('home')}
             />

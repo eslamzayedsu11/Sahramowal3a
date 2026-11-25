@@ -35,6 +35,10 @@ interface MusicPlayerBarProps {
   challengeId: string;
   audioUrl: string;
   songTitle?: string;
+  trackIndex?: number;
+  totalTracks?: number;
+  onPrevTrack?: () => void;
+  onNextTrack?: () => void;
   canGoPrev?: boolean;
   canGoNext?: boolean;
   onPrevChallenge?: () => void;
@@ -72,6 +76,10 @@ export function MusicPlayerBar({
   challengeId,
   audioUrl,
   songTitle,
+  trackIndex = 0,
+  totalTracks = 1,
+  onPrevTrack,
+  onNextTrack,
   canGoPrev = false,
   canGoNext = true,
   onPrevChallenge,
@@ -94,7 +102,9 @@ export function MusicPlayerBar({
     errorMessage: null,
     userVolume: 1,
     userMuted: false,
+    challengeVolume: 1,
     fadeFactor: 1,
+    endedSeq: 0,
   });
 
   useEffect(() => {
@@ -496,6 +506,42 @@ export function MusicPlayerBar({
               />
             ))}
           </div>
+
+          {totalTracks > 1 && (
+            <div className="inline-flex items-center gap-0.5 rounded-full border border-[#B98A9E]/25 bg-[#120618] px-1 py-0.5 text-[10px] font-bold text-[#F4E8D8] tabular-nums shrink-0">
+              {onPrevTrack && (
+                <button
+                  type="button"
+                  disabled={!previewMode && trackIndex <= 0}
+                  onClick={() => {
+                    playTapSound();
+                    onPrevTrack();
+                  }}
+                  aria-label="الأغنية السابقة في القائمة"
+                  className="px-1 text-[#B98A9E] hover:text-[#FF7A3D] disabled:opacity-30 cursor-pointer"
+                >
+                  ‹
+                </button>
+              )}
+              <span className="px-0.5">
+                {trackIndex + 1}/{totalTracks}
+              </span>
+              {onNextTrack && (
+                <button
+                  type="button"
+                  disabled={!previewMode && trackIndex >= totalTracks - 1}
+                  onClick={() => {
+                    playTapSound();
+                    onNextTrack();
+                  }}
+                  aria-label="الأغنية التالية في القائمة"
+                  className="px-1 text-[#B98A9E] hover:text-[#FF7A3D] disabled:opacity-30 cursor-pointer"
+                >
+                  ›
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Desktop Volume Control (expands on hover/focus with mute icon) */}

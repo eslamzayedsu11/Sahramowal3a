@@ -25,6 +25,26 @@ export function normalizeHeat(raw?: string | null): HeatLevel {
   return 'warm';
 }
 
+export interface ChallengeSong {
+  url: string;
+  title?: string;
+}
+
+export interface SongCategory {
+  id: string;
+  name: string;
+  order: number;
+  createdAt: number;
+}
+
+export interface SavedSong {
+  id: string;
+  categoryId: string;
+  title: string;
+  url: string;
+  createdAt: number;
+}
+
 export interface Challenge {
   id: string;
   category: CategoryId;
@@ -33,6 +53,9 @@ export interface Challenge {
   backNote?: string;
   audioUrl?: string;
   songTitle?: string;
+  songs?: ChallengeSong[];
+  audioCategoryId?: string;
+  audioVolume?: number;
   timerMinutes?: number | null;
   heat?: HeatLevel;
   order: number;
@@ -47,6 +70,9 @@ export interface ChallengeInput {
   backNote?: string;
   audioUrl?: string;
   songTitle?: string;
+  songs?: ChallengeSong[];
+  audioCategoryId?: string;
+  audioVolume?: number;
   timerMinutes?: number | null;
   heat?: HeatLevel;
   order: number;

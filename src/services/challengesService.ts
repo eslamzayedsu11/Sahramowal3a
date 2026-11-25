@@ -17,6 +17,7 @@ import {
   type CategoryId,
   type Challenge,
   type ChallengeInput,
+  type ChallengeSong,
 } from '../types';
 
 const COLLECTION_NAME = 'challenges';
@@ -86,6 +87,33 @@ function sortChallenges(list: Challenge[]): Challenge[] {
   });
 }
 
+function normalizeSongsList(
+  songs?: ChallengeSong[],
+  legacyUrl?: string,
+  legacyTitle?: string
+): ChallengeSong[] {
+  if (Array.isArray(songs)) {
+    return songs
+      .filter((s) => s && typeof s.url === 'string' && s.url.length > 0)
+      .slice(0, 50)
+      .map((s) => ({
+        url: s.url,
+        title: (s.title ?? '').trim().slice(0, 120),
+      }));
+  }
+  if (legacyUrl && legacyUrl.length > 0) {
+    return [{ url: legacyUrl, title: (legacyTitle ?? '').trim().slice(0, 120) }];
+  }
+  return [];
+}
+
+function normalizeAudioVolume(vol?: number | null): number {
+  if (typeof vol === 'number' && Number.isFinite(vol)) {
+    return Math.max(0.05, Math.min(1, Math.round(vol * 100) / 100));
+  }
+  return 1;
+}
+
 function clampChallengePayload(input: ChallengeInput) {
   const category: CategoryId = VALID_CATEGORIES.includes(input.category)
     ? input.category
@@ -93,8 +121,11 @@ function clampChallengePayload(input: ChallengeInput) {
   const text = input.text.trim().slice(0, 2000);
   const imageUrl = input.imageUrl ?? '';
   const backNote = (input.backNote ?? '').trim().slice(0, 300);
-  const audioUrl = input.audioUrl ?? '';
-  const songTitle = (input.songTitle ?? '').trim().slice(0, 120);
+  const songs = normalizeSongsList(input.songs, input.audioUrl, input.songTitle);
+  const audioUrl = songs[0]?.url ?? (input.audioUrl ?? '');
+  const songTitle = (songs[0]?.title ?? input.songTitle ?? '').trim().slice(0, 120);
+  const audioCategoryId = (input.audioCategoryId ?? '').trim().slice(0, 128);
+  const audioVolume = normalizeAudioVolume(input.audioVolume);
   const timerMinutes =
     typeof input.timerMinutes === 'number' &&
     Number.isFinite(input.timerMinutes) &&
@@ -114,6 +145,9 @@ function clampChallengePayload(input: ChallengeInput) {
     backNote,
     audioUrl,
     songTitle,
+    songs,
+    audioCategoryId,
+    audioVolume,
     timerMinutes,
     heat,
     order,
@@ -222,14 +256,25 @@ export function subscribeChallenges(
     (snapshot) => {
       const items: Challenge[] = snapshot.docs.map((docSnap) => {
         const data = docSnap.data();
+        const legacyAudioUrl = data.audioUrl ? String(data.audioUrl) : '';
+        const legacySongTitle = data.songTitle ? String(data.songTitle) : '';
+        const rawSongs = Array.isArray(data.songs)
+          ? (data.songs as ChallengeSong[])
+          : undefined;
+        const songs = normalizeSongsList(rawSongs, legacyAudioUrl, legacySongTitle);
         return {
           id: docSnap.id,
           category: VALID_CATEGORIES.includes(data.category) ? data.category : 'dal3',
           text: String(data.text ?? ''),
           imageUrl: data.imageUrl ? String(data.imageUrl) : '',
           backNote: data.backNote ? String(data.backNote) : '',
-          audioUrl: data.audioUrl ? String(data.audioUrl) : '',
-          songTitle: data.songTitle ? String(data.songTitle) : '',
+          audioUrl: songs[0]?.url ?? legacyAudioUrl,
+          songTitle: songs[0]?.title ?? legacySongTitle,
+          songs,
+          audioCategoryId: data.audioCategoryId ? String(data.audioCategoryId) : '',
+          audioVolume: normalizeAudioVolume(
+            typeof data.audioVolume === 'number' ? data.audioVolume : undefined
+          ),
           timerMinutes:
             typeof data.timerMinutes === 'number' && data.timerMinutes > 0
               ? data.timerMinutes
@@ -338,11 +383,24 @@ export async function updateChallenge(
   if (updates.backNote !== undefined) {
     cleanUpdates.backNote = updates.backNote.trim().slice(0, 300);
   }
-  if (updates.audioUrl !== undefined) {
-    cleanUpdates.audioUrl = updates.audioUrl;
+  if (updates.songs !== undefined) {
+    const normalizedSongs = normalizeSongsList(updates.songs);
+    cleanUpdates.songs = normalizedSongs;
+    cleanUpdates.audioUrl = normalizedSongs[0]?.url ?? '';
+    cleanUpdates.songTitle = normalizedSongs[0]?.title ?? '';
+  } else {
+    if (updates.audioUrl !== undefined) {
+      cleanUpdates.audioUrl = updates.audioUrl;
+    }
+    if (updates.songTitle !== undefined) {
+      cleanUpdates.songTitle = updates.songTitle.trim().slice(0, 120);
+    }
   }
-  if (updates.songTitle !== undefined) {
-    cleanUpdates.songTitle = updates.songTitle.trim().slice(0, 120);
+  if (updates.audioCategoryId !== undefined) {
+    cleanUpdates.audioCategoryId = updates.audioCategoryId.trim().slice(0, 128);
+  }
+  if (updates.audioVolume !== undefined) {
+    cleanUpdates.audioVolume = normalizeAudioVolume(updates.audioVolume);
   }
   if (updates.timerMinutes !== undefined) {
     cleanUpdates.timerMinutes =
