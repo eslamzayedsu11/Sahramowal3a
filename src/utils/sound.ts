@@ -667,6 +667,12 @@ export function triggerGentleVibration(): void {
   }
 }
 
+const ARABIC_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'] as const;
+
+export function toArabicDigits(value: string | number): string {
+  return String(value).replace(/\d/g, (d) => ARABIC_DIGITS[Number(d)] ?? d);
+}
+
 export function formatSecondsMMSS(totalSeconds: number): string {
   const safe = Math.max(0, Math.floor(totalSeconds));
   const mins = Math.floor(safe / 60);

@@ -22,6 +22,7 @@ import {
   playHoverSound,
   playSparkSound,
   playTapSound,
+  toArabicDigits,
 } from '../utils/sound';
 import { MusicPlayerBar } from './MusicPlayerBar';
 import { PolaroidFrame } from './PolaroidFrame';
@@ -134,7 +135,9 @@ export function ChallengeStage({
     : tensionIntensity * 1.15;
 
   const formattedClock = formatSecondsMMSS(remainingSeconds);
-  const [minsPart, secsPart] = formattedClock.split(':');
+  const [minsRaw, secsRaw] = formattedClock.split(':');
+  const minsPart = toArabicDigits(minsRaw);
+  const secsPart = toArabicDigits(secsRaw);
 
   // Circular progress ring math
   const ringRadius = 18;
@@ -147,31 +150,33 @@ export function ChallengeStage({
 
   const combinedFinishBurst = finishBurstKey + nextSparkKey;
 
-  // Auto-fit challenge text inside the taped paper note so long text shrinks cleanly
+  // Auto-fit challenge text inside the taped paper note so long text never clips
   const recomputeTextFit = useCallback(() => {
     const container = noteContainerRef.current;
     const textEl = noteTextRef.current;
     if (!container || !textEl) return;
 
-    const availHeight = container.clientHeight;
-    const availWidth = container.clientWidth;
-    if (availHeight <= 24) return;
+    const isWide = typeof window !== 'undefined' && window.innerWidth >= 1024;
+    if (!isWide && !previewMode) {
+      // On mobile/tablet let the paper expand naturally to show 100% of text with zero clipping
+      const mobilePx = displayText.length > 140 ? 19 : displayText.length > 80 ? 21 : 23;
+      textEl.style.fontSize = `${mobilePx}px`;
+      setFittedFontPx(mobilePx);
+      setNeedsInnerScroll(false);
+      return;
+    }
 
+    const rawHeight = container.clientHeight;
+    const availWidth = container.clientWidth;
+    if (rawHeight <= 32) return;
+
+    const availHeight = Math.max(24, rawHeight - 14);
     const sig = `${displayText}|${showPolaroid}|${previewMode}|${availWidth}|${availHeight}`;
     if (lastFitSigRef.current === sig) return;
     lastFitSigRef.current = sig;
 
-    const isWide = typeof window !== 'undefined' && window.innerWidth >= 1024;
-    const minPx = previewMode ? 16 : 18;
-    const maxPx = previewMode
-      ? 26
-      : isWide
-        ? showPolaroid
-          ? 38
-          : 44
-        : showPolaroid
-          ? 27
-          : 32;
+    const minPx = previewMode ? 13 : 14;
+    const maxPx = previewMode ? 24 : showPolaroid ? 34 : 40;
 
     let low = minPx;
     let high = maxPx;
@@ -190,7 +195,7 @@ export function ChallengeStage({
 
     textEl.style.fontSize = `${best}px`;
     setFittedFontPx(best);
-    setNeedsInnerScroll(textEl.scrollHeight > availHeight + 2);
+    setNeedsInnerScroll(textEl.scrollHeight > rawHeight - 2);
   }, [displayText, previewMode, showPolaroid]);
 
   useLayoutEffect(() => {
@@ -198,14 +203,30 @@ export function ChallengeStage({
   }, [recomputeTextFit]);
 
   useEffect(() => {
+    let cancelled = false;
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      void document.fonts.ready.then(() => {
+        if (!cancelled) {
+          lastFitSigRef.current = '';
+          recomputeTextFit();
+        }
+      });
+    }
     const container = noteContainerRef.current;
-    if (!container || typeof ResizeObserver === 'undefined') return;
+    if (!container || typeof ResizeObserver === 'undefined') {
+      return () => {
+        cancelled = true;
+      };
+    }
 
     const ro = new ResizeObserver(() => {
       recomputeTextFit();
     });
     ro.observe(container);
-    return () => ro.disconnect();
+    return () => {
+      cancelled = true;
+      ro.disconnect();
+    };
   }, [recomputeTextFit]);
 
   return (
@@ -376,22 +397,22 @@ export function ChallengeStage({
 
       {/* MIDDLE LANDSCAPE TABLETOP SCENE */}
       <div
-        className={`my-3 lg:my-2 flex-1 min-h-0 flex flex-col ${
+        className={`my-2.5 lg:my-1.5 flex-1 min-h-0 flex flex-col ${
           showPolaroid
             ? previewMode
               ? 'gap-4 items-center'
-              : 'lg:flex-row lg:items-center lg:justify-between gap-5 lg:gap-10'
+              : 'lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-8'
             : 'items-center justify-center'
         }`}
       >
-        {/* Middle-Left (~45% width on desktop): Taped Cream Paper Note with Auto-Fitting Text */}
+        {/* Middle-Left (~42% width on desktop): Taped Cream Paper Note with Auto-Fitting Text */}
         <div
           dir="rtl"
           className={`relative w-full ${
             showPolaroid
               ? previewMode
                 ? ''
-                : 'lg:w-[45%] lg:shrink-0'
+                : 'lg:w-[42%] lg:shrink-0'
               : 'max-w-2xl mx-auto'
           }`}
         >
@@ -405,32 +426,30 @@ export function ChallengeStage({
           />
 
           <div
-            className={`scrapbook-paper torn-edge-note relative px-5 pt-6 pb-7 sm:px-7 sm:pt-7 sm:pb-8 lg:px-8 lg:pt-6 lg:pb-7 -rotate-[0.8deg] flex items-center ${
+            className={`scrapbook-paper torn-edge-note relative px-5 pt-6 pb-11 sm:px-7 sm:pt-7 sm:pb-12 lg:px-8 lg:pt-6 lg:pb-12 -rotate-[0.8deg] flex items-center ${
               previewMode
                 ? 'min-h-[140px]'
                 : hasAudio
-                  ? 'min-h-[160px] lg:h-[clamp(170px,30dvh,360px)]'
-                  : 'min-h-[170px] lg:h-[clamp(200px,38dvh,390px)]'
+                  ? 'min-h-[145px] lg:h-[clamp(195px,35dvh,385px)]'
+                  : 'min-h-[160px] lg:h-[clamp(215px,39dvh,405px)]'
             }`}
           >
             <div
               ref={noteContainerRef}
               className={`w-full ${
                 previewMode
-                  ? 'max-h-[190px]'
-                  : hasAudio
-                    ? 'max-h-[240px] lg:h-[clamp(135px,24dvh,290px)] lg:max-h-full'
-                    : 'max-h-[260px] lg:h-[clamp(155px,30dvh,315px)] lg:max-h-full'
+                  ? 'max-h-[175px]'
+                  : 'lg:h-full'
               } flex items-center ${
                 needsInnerScroll
                   ? 'overflow-y-auto items-start scrapbook-scroll pl-1'
-                  : 'overflow-hidden'
+                  : 'overflow-visible lg:overflow-hidden'
               }`}
             >
               <p
                 ref={noteTextRef}
                 style={{ fontSize: `${fittedFontPx}px` }}
-                className={`w-full font-calligraphy font-bold text-[#1B0A22] leading-[1.65] text-balance ${
+                className={`w-full font-challenge font-bold text-[#1B0A22] leading-[1.72] text-balance pb-1 ${
                   showPolaroid ? 'text-right' : 'text-center'
                 }`}
               >
@@ -539,12 +558,12 @@ export function ChallengeStage({
                 {isTimerPaused ? (
                   <>
                     <Play className="h-4 w-4 fill-current text-[#FF7A3D]" />
-                    <span>استئناف المؤقت</span>
+                    <span>استئناف التحدي</span>
                   </>
                 ) : (
                   <>
                     <Pause className="h-4 w-4 fill-current text-[#FF7A3D]" />
-                    <span>إيقاف المؤقت</span>
+                    <span>إيقاف مؤقت</span>
                   </>
                 )}
               </motion.button>
@@ -736,7 +755,7 @@ export function ChallengeStage({
                           inTension ? 'text-[#FF7A3D]' : 'text-[#F4E8D8]'
                         }`}
                       >
-                        {formatSecondsMMSS(remainingSeconds)}
+                        {toArabicDigits(formattedClock)}
                       </span>
                     </span>
 

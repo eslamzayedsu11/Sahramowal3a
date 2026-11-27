@@ -306,13 +306,13 @@ export function MusicPlayerBar({
   const renderPlatter = (compact: boolean) => (
     <div
       className={`relative shrink-0 flex items-center justify-center rounded-xl border border-[#B98A9E]/20 bg-[#0B0410] shadow-[inset_0_3px_12px_rgba(0,0,0,0.9)] ${
-        compact ? 'h-[86px] w-[86px]' : 'h-[158px] w-[158px]'
+        compact ? 'h-[62px] w-[62px]' : 'h-[92px] w-[92px]'
       }`}
     >
       {/* Platter recessed ring */}
       <div
         className={`relative rounded-full bg-[#09030D] border border-[#5A4236]/55 shadow-[0_8px_18px_rgba(0,0,0,0.9)] flex items-center justify-center ${
-          compact ? 'h-[76px] w-[76px]' : 'h-[142px] w-[142px]'
+          compact ? 'h-[54px] w-[54px]' : 'h-[82px] w-[82px]'
         }`}
       >
         {/* Spinning Vinyl Disc */}
@@ -398,16 +398,16 @@ export function MusicPlayerBar({
       <div
         aria-hidden="true"
         className={`pointer-events-none absolute z-20 ${
-          compact ? 'top-1.5 right-1.5' : 'top-2.5 right-2.5'
+          compact ? 'top-1 right-1' : 'top-1.5 right-1.5'
         }`}
       >
         {/* Brass Gimbal Base */}
         <div
           className={`relative rounded-full border border-[#F4E8D8]/35 bg-gradient-to-br from-[#D4A373] via-[#8C5E35] to-[#4A2E17] shadow-md flex items-center justify-center ${
-            compact ? 'h-4 w-4' : 'h-6 w-6'
+            compact ? 'h-3 w-3' : 'h-4 w-4'
           }`}
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-[#14081A]/80" />
+          <span className="h-1 w-1 rounded-full bg-[#14081A]/80" />
 
           {/* Pivoting Arm */}
           <motion.div
@@ -429,25 +429,25 @@ export function MusicPlayerBar({
                   }
             }
             className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[6px] flex flex-col items-center ${
-              compact ? 'w-3 h-[56px]' : 'w-4 h-[102px]'
+              compact ? 'w-2.5 h-[40px]' : 'w-3 h-[62px]'
             }`}
           >
             {/* Counterweight tail */}
             <div
               className={`rounded-sm bg-[#7A5438] border border-[#F4E8D8]/25 ${
-                compact ? 'h-1.5 w-2 -mt-1.5' : 'h-2.5 w-3 -mt-2'
+                compact ? 'h-1 w-1.5 -mt-1' : 'h-1.5 w-2 -mt-1.5'
               }`}
             />
             {/* Slim dark-metal / brass tube */}
             <div
               className={`flex-1 rounded-full bg-gradient-to-b from-[#D4A373] via-[#9E94A0] to-[#564B5C] shadow-[1px_3px_6px_rgba(0,0,0,0.7)] ${
-                compact ? 'w-[2px]' : 'w-[3px]'
+                compact ? 'w-[1.5px]' : 'w-[2px]'
               }`}
             />
             {/* Angled headshell + glowing stylus tip */}
             <div
               className={`relative -rotate-[18deg] origin-top rounded-[2px] bg-[#1D0B24] border border-[#D4A373]/75 shadow-md flex items-end justify-center ${
-                compact ? 'h-3 w-2' : 'h-4 w-2.5'
+                compact ? 'h-2.5 w-1.5' : 'h-3 w-2'
               }`}
             >
               <span
@@ -480,9 +480,9 @@ export function MusicPlayerBar({
   const renderDeckRight = (compact: boolean) => (
     <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
       {/* Top Meta Row: "الآن يُعزف" + 5 Equalizer Bars + Desktop Hover Volume */}
-      <div className="flex items-center justify-between gap-2">
-        <div dir="rtl" className="flex items-center gap-2 min-w-0">
-          <span className="inline-block rounded-[3px] border border-[#FF4D8D]/40 bg-[#FF4D8D]/12 px-1.5 py-0.5 text-[10px] font-bold text-[#F4E8D8] whitespace-nowrap">
+      <div className="flex items-center justify-between gap-1.5">
+        <div dir="rtl" className="flex items-center gap-1.5 min-w-0">
+          <span className="inline-block rounded-[3px] border border-[#FF4D8D]/40 bg-[#FF4D8D]/12 px-1 py-0 text-[9px] font-bold text-[#F4E8D8] whitespace-nowrap">
             {hasError
               ? 'تعذّر التشغيل'
               : isBuffering
@@ -495,20 +495,20 @@ export function MusicPlayerBar({
           {/* 5 CSS-only Equalizer Bars */}
           <div
             aria-hidden="true"
-            className={`flex items-end gap-[2.5px] h-3.5 ${
+            className={`flex items-end gap-[2px] h-2.5 ${
               isStylusOnVinyl ? 'turntable-eq-playing' : ''
             }`}
           >
             {[0, 1, 2, 3, 4].map((bar) => (
               <span
                 key={bar}
-                className="turntable-eq-bar w-[2.5px] h-full rounded-full bg-gradient-to-t from-[#FF4D8D] to-[#FF7A3D]"
+                className="turntable-eq-bar w-[2px] h-full rounded-full bg-gradient-to-t from-[#FF4D8D] to-[#FF7A3D]"
               />
             ))}
           </div>
 
           {totalTracks > 1 && (
-            <div className="inline-flex items-center gap-0.5 rounded-full border border-[#B98A9E]/25 bg-[#120618] px-1 py-0.5 text-[10px] font-bold text-[#F4E8D8] tabular-nums shrink-0">
+            <div className="inline-flex items-center gap-0.5 rounded-full border border-[#B98A9E]/25 bg-[#120618] px-1 py-0 text-[9px] font-bold text-[#F4E8D8] tabular-nums shrink-0">
               {onPrevTrack && (
                 <button
                   type="button"
@@ -518,7 +518,7 @@ export function MusicPlayerBar({
                     onPrevTrack();
                   }}
                   aria-label="الأغنية السابقة في القائمة"
-                  className="px-1 text-[#B98A9E] hover:text-[#FF7A3D] disabled:opacity-30 cursor-pointer"
+                  className="px-0.5 text-[#B98A9E] hover:text-[#FF7A3D] disabled:opacity-30 cursor-pointer"
                 >
                   ‹
                 </button>
@@ -535,7 +535,7 @@ export function MusicPlayerBar({
                     onNextTrack();
                   }}
                   aria-label="الأغنية التالية في القائمة"
-                  className="px-1 text-[#B98A9E] hover:text-[#FF7A3D] disabled:opacity-30 cursor-pointer"
+                  className="px-0.5 text-[#B98A9E] hover:text-[#FF7A3D] disabled:opacity-30 cursor-pointer"
                 >
                   ›
                 </button>
@@ -555,7 +555,7 @@ export function MusicPlayerBar({
                 setVolumeExpanded(false);
               }
             }}
-            className="hidden lg:flex items-center gap-1 rounded-full border border-[#B98A9E]/25 bg-[#120618] px-1.5 py-1 transition-all"
+            className="hidden lg:flex items-center gap-1 rounded-full border border-[#B98A9E]/25 bg-[#120618] px-1 py-0.5 transition-all"
           >
             <button
               type="button"
@@ -564,20 +564,20 @@ export function MusicPlayerBar({
                 toggleSongMute();
               }}
               aria-label={songState.userMuted || effectiveVol === 0 ? 'إلغاء كتم الأغنية' : 'كتم الأغنية'}
-              className="h-5 w-5 flex items-center justify-center text-[#B98A9E] hover:text-[#F4E8D8] cursor-pointer focus:outline-none"
+              className="h-4 w-4 flex items-center justify-center text-[#B98A9E] hover:text-[#F4E8D8] cursor-pointer focus:outline-none"
             >
               {songState.userMuted || effectiveVol === 0 ? (
-                <VolumeX className="h-3.5 w-3.5 text-[#FF4D8D]" />
+                <VolumeX className="h-3 w-3 text-[#FF4D8D]" />
               ) : effectiveVol < 0.5 ? (
-                <Volume1 className="h-3.5 w-3.5" />
+                <Volume1 className="h-3 w-3" />
               ) : (
-                <Volume2 className="h-3.5 w-3.5" />
+                <Volume2 className="h-3 w-3" />
               )}
             </button>
 
             <div
               className={`overflow-hidden transition-all duration-200 flex items-center ${
-                volumeExpanded ? 'w-14 opacity-100 pr-0.5' : 'w-0 opacity-0'
+                volumeExpanded ? 'w-12 opacity-100 pr-0.5' : 'w-0 opacity-0'
               }`}
             >
               <input
@@ -588,7 +588,7 @@ export function MusicPlayerBar({
                 value={effectiveVol}
                 aria-label="مستوى صوت الأغنية"
                 onChange={(e) => setUserSongVolume(Number(e.target.value))}
-                className="w-14 accent-[#FF7A3D] h-1 cursor-pointer"
+                className="w-12 accent-[#FF7A3D] h-1 cursor-pointer"
               />
             </div>
           </div>
@@ -599,7 +599,7 @@ export function MusicPlayerBar({
       <div
         ref={titleViewportRef}
         dir={isTitleRtl ? 'rtl' : 'ltr'}
-        className="relative w-full overflow-hidden my-1"
+        className="relative w-full overflow-hidden my-0.5"
       >
         <span
           ref={titleTextRef}
@@ -609,7 +609,7 @@ export function MusicPlayerBar({
               : undefined
           }
           className={`inline-block whitespace-nowrap font-bold text-[#F4E8D8] ${
-            compact ? 'text-xs' : 'text-[13px]'
+            compact ? 'text-[11px]' : 'text-xs'
           } ${
             marqueeDeltaPx !== 0 && !prefersReducedMotion
               ? 'turntable-marquee-active'
@@ -658,10 +658,10 @@ export function MusicPlayerBar({
             seekFromClientX(e.clientX, true);
           }}
           onPointerCancel={() => setIsDraggingSeek(false)}
-          className="relative flex items-center h-5 cursor-pointer touch-none select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D8D] rounded"
+          className="relative flex items-center h-3.5 cursor-pointer touch-none select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D8D] rounded"
         >
           {/* Recessed Vinyl Groove Track */}
-          <div className="w-full h-[5px] rounded-full bg-[#09030D] border border-[#B98A9E]/20 shadow-[inset_0_1px_3px_rgba(0,0,0,0.9)] overflow-hidden">
+          <div className="w-full h-[4px] rounded-full bg-[#09030D] border border-[#B98A9E]/20 shadow-[inset_0_1px_3px_rgba(0,0,0,0.9)] overflow-hidden">
             <div
               className="h-full rounded-full bg-gradient-to-r from-[#FF4D8D] to-[#FF7A3D]"
               style={{ width: `${displayedPercent}%` }}
@@ -679,7 +679,7 @@ export function MusicPlayerBar({
           >
             <svg
               viewBox="0 0 24 24"
-              className="h-3.5 w-3.5 drop-shadow-[0_0_6px_rgba(255,77,141,0.9)]"
+              className="h-3 w-3 drop-shadow-[0_0_6px_rgba(255,77,141,0.9)]"
             >
               <path
                 d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
@@ -692,7 +692,7 @@ export function MusicPlayerBar({
         </div>
 
         {/* Elapsed / -Remaining Time */}
-        <div className="flex items-center justify-between text-[10px] text-[#B98A9E] tabular-nums -mt-0.5">
+        <div className="flex items-center justify-between text-[9px] text-[#B98A9E] tabular-nums -mt-0.5">
           <span>{formatPlayerTime(currentTime)}</span>
           <span>-{formatPlayerTime(remaining)}</span>
         </div>
@@ -702,9 +702,9 @@ export function MusicPlayerBar({
       {hasError ? (
         <div
           dir="rtl"
-          className="mt-1.5 pt-1.5 border-t border-[#FF4D8D]/25 flex items-center justify-between gap-2"
+          className="mt-1 pt-1 border-t border-[#FF4D8D]/25 flex items-center justify-between gap-2"
         >
-          <span className="text-[11px] font-semibold text-[#FF7A3D] truncate">
+          <span className="text-[10px] font-semibold text-[#FF7A3D] truncate">
             تعذّر تشغيل الأغنية
           </span>
           <button
@@ -713,14 +713,14 @@ export function MusicPlayerBar({
               playTapSound();
               retrySong();
             }}
-            className="min-h-[32px] px-2.5 py-1 rounded-lg border border-[#FF4D8D]/45 bg-[#FF4D8D]/15 hover:bg-[#FF4D8D]/25 text-[11px] font-bold text-[#F4E8D8] inline-flex items-center gap-1 cursor-pointer shrink-0"
+            className="min-h-[28px] px-2 py-0.5 rounded-lg border border-[#FF4D8D]/45 bg-[#FF4D8D]/15 hover:bg-[#FF4D8D]/25 text-[10px] font-bold text-[#F4E8D8] inline-flex items-center gap-1 cursor-pointer shrink-0"
           >
             <RotateCcw className="h-3 w-3" />
             <span>إعادة المحاولة</span>
           </button>
         </div>
       ) : (
-        <div className="mt-1 flex items-center justify-between gap-1">
+        <div className="mt-0.5 flex items-center justify-between gap-1">
           {/* Heart Like Button with pop animation */}
           <motion.button
             key={likePopKey}
@@ -733,10 +733,10 @@ export function MusicPlayerBar({
                 : { scale: 1 }
             }
             transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
-            className="min-h-[36px] min-w-[34px] flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D8D]"
+            className="min-h-[28px] min-w-[26px] flex items-center justify-center rounded-lg hover:bg-white/5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D8D]"
           >
             <Heart
-              className={`h-4 w-4 transition-colors ${
+              className={`h-3.5 w-3.5 transition-colors ${
                 liked
                   ? 'fill-[#FF4D8D] text-[#FF4D8D] drop-shadow-[0_0_6px_rgba(255,77,141,0.7)]'
                   : 'text-[#B98A9E] hover:text-[#F4E8D8]'
@@ -753,12 +753,12 @@ export function MusicPlayerBar({
               onPrevChallenge?.();
             }}
             aria-label="التحدي السابق"
-            className="min-h-[36px] min-w-[34px] flex items-center justify-center rounded-lg text-[#F4E8D8]/85 hover:text-[#FF7A3D] disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A3D]"
+            className="min-h-[28px] min-w-[26px] flex items-center justify-center rounded-lg text-[#F4E8D8]/85 hover:text-[#FF7A3D] disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A3D]"
           >
-            <SkipBack className="h-4 w-4 fill-current" />
+            <SkipBack className="h-3.5 w-3.5 fill-current" />
           </button>
 
-          {/* Large Circular Play/Pause with Ember Neon Ring & Tactile Press */}
+          {/* Circular Play/Pause with Ember Neon Ring & Tactile Press */}
           <motion.button
             type="button"
             whileTap={prefersReducedMotion ? undefined : { scale: 0.91 }}
@@ -766,20 +766,20 @@ export function MusicPlayerBar({
             onClick={handleTogglePlay}
             aria-label={isPlaying ? 'إيقاف الأغنية' : 'تشغيل الأغنية'}
             className={`relative rounded-full bg-[#1F0B29] text-[#F4E8D8] flex items-center justify-center border-2 border-[#FF7A3D] cursor-pointer transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4E8D8] ${
-              compact ? 'h-9 w-9' : 'h-11 w-11'
+              compact ? 'h-7 w-7' : 'h-8 w-8'
             }`}
             style={{
               boxShadow: isStylusOnVinyl
-                ? '0 0 18px rgba(255, 77, 141, 0.58), inset 0 0 10px rgba(255, 122, 61, 0.35)'
-                : '0 0 12px rgba(255, 122, 61, 0.38), inset 0 0 8px rgba(255, 77, 141, 0.2)',
+                ? '0 0 14px rgba(255, 77, 141, 0.58), inset 0 0 8px rgba(255, 122, 61, 0.35)'
+                : '0 0 10px rgba(255, 122, 61, 0.38), inset 0 0 6px rgba(255, 77, 141, 0.2)',
             }}
           >
             {isBuffering ? (
-              <Loader2 className="h-4 w-4 animate-spin text-[#FF7A3D]" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#FF7A3D]" />
             ) : isPlaying ? (
-              <Pause className="h-4 w-4 fill-current text-[#F4E8D8]" />
+              <Pause className="h-3.5 w-3.5 fill-current text-[#F4E8D8]" />
             ) : (
-              <Play className="h-4 w-4 fill-current text-[#F4E8D8] translate-x-[1px]" />
+              <Play className="h-3.5 w-3.5 fill-current text-[#F4E8D8] translate-x-[1px]" />
             )}
           </motion.button>
 
@@ -798,9 +798,9 @@ export function MusicPlayerBar({
                 ? 'الانتقال متاح بعد انتهاء المؤقت'
                 : 'التحدي التالي'
             }
-            className="min-h-[36px] min-w-[34px] flex items-center justify-center rounded-lg text-[#F4E8D8]/85 hover:text-[#FF7A3D] disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A3D]"
+            className="min-h-[28px] min-w-[26px] flex items-center justify-center rounded-lg text-[#F4E8D8]/85 hover:text-[#FF7A3D] disabled:opacity-25 disabled:cursor-not-allowed transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A3D]"
           >
-            <SkipForward className="h-4 w-4 fill-current" />
+            <SkipForward className="h-3.5 w-3.5 fill-current" />
           </button>
         </div>
       )}
@@ -812,30 +812,30 @@ export function MusicPlayerBar({
       dir="ltr"
       className={`relative rounded-[12px] border border-[#B98A9E]/30 bg-gradient-to-br from-[#1C0A24] via-[#15081B] to-[#0E0513] text-[#F4E8D8] shadow-[0_20px_38px_-10px_rgba(0,0,0,0.92),0_4px_12px_rgba(0,0,0,0.68),inset_0_1px_0_rgba(244,232,216,0.1)] select-none ${
         previewMode
-          ? 'w-full max-w-[330px] p-3'
-          : 'w-full max-w-[332px] p-3 lg:w-[340px] lg:h-[220px] lg:p-3.5'
+          ? 'w-full max-w-[270px] p-2'
+          : 'w-full max-w-[274px] p-2 lg:w-[272px] lg:h-[118px] lg:p-2'
       }`}
     >
       {/* Tiny corner brass screws for tabletop hardware realism */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute top-2 left-2 h-1.5 w-1.5 rounded-full bg-[#B98A9E]/35"
+        className="pointer-events-none absolute top-1.5 left-1.5 h-1 w-1 rounded-full bg-[#B98A9E]/35"
       />
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#B98A9E]/35"
+        className="pointer-events-none absolute top-1.5 right-1.5 h-1 w-1 rounded-full bg-[#B98A9E]/35"
       />
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-2 left-2 h-1.5 w-1.5 rounded-full bg-[#B98A9E]/35"
+        className="pointer-events-none absolute bottom-1.5 left-1.5 h-1 w-1 rounded-full bg-[#B98A9E]/35"
       />
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-2 right-2 h-1.5 w-1.5 rounded-full bg-[#B98A9E]/35"
+        className="pointer-events-none absolute bottom-1.5 right-1.5 h-1 w-1 rounded-full bg-[#B98A9E]/35"
       />
 
-      {/* Desktop 340x220 Turntable vs Compact Mobile Horizontal Layout */}
-      <div className="h-full flex items-center gap-3.5">
+      {/* Compact Desktop Turntable vs Mobile Horizontal Layout */}
+      <div className="h-full flex items-center gap-2.5">
         {/* Desktop Full Turntable Platter */}
         {!previewMode && (
           <div className="hidden lg:block">{renderPlatter(false)}</div>

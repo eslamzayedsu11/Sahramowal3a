@@ -35,6 +35,7 @@ import {
   playTensionPulse,
   playWhooshSound,
   setSfxEnabled,
+  toArabicDigits,
   triggerSecondVibration,
 } from '../utils/sound';
 import { setTensionLevel } from '../utils/tensionState';
@@ -140,6 +141,7 @@ export function ChallengeScreen({
   const lastSoftTickSecRef = useRef<number | null>(null);
   const lastTensionSecRef = useRef<number | null>(null);
   const songPausedByFadeRef = useRef<boolean>(false);
+  const songPausedByTimerRef = useRef<boolean>(false);
   const finishClearTimerRef = useRef<number | null>(null);
   const lastEndedSeqRef = useRef<number>(0);
   const pendingCategoryLoopPlayRef = useRef<boolean>(false);
@@ -263,6 +265,7 @@ export function ChallengeScreen({
     setTensionLevel(0);
     setSongVolume(1);
     songPausedByFadeRef.current = false;
+    songPausedByTimerRef.current = false;
 
     if (!currentChallenge) {
       stopAndReleaseSong();
@@ -465,6 +468,7 @@ export function ChallengeScreen({
     const track = resolvedPlaylist[trackIndex] ?? resolvedPlaylist[0];
     if (track && /^https?:\/\//i.test(track.url)) {
       songPausedByFadeRef.current = false;
+      songPausedByTimerRef.current = false;
       setChallengeBaseVolume(currentChallenge.audioVolume ?? 1);
       void playSong(track.url);
     }
@@ -478,6 +482,7 @@ export function ChallengeScreen({
       const wasPlaying = isSongPlayingNow() || hasStarted;
       setTrackIndex(nextIndex);
       songPausedByFadeRef.current = false;
+      songPausedByTimerRef.current = false;
       setChallengeBaseVolume(currentChallenge?.audioVolume ?? 1);
       if (wasPlaying) {
         void playSong(track.url);
@@ -501,11 +506,27 @@ export function ChallengeScreen({
       setTensionSecond(null);
       setTensionLevel(0);
       setSongVolume(1);
+
+      if (isSongPlayingNow()) {
+        songPausedByTimerRef.current = true;
+        pauseSong();
+      } else {
+        songPausedByTimerRef.current = false;
+      }
     } else {
       endTimestampRef.current = Date.now() + pausedRemainingMsRef.current;
       setIsTimerPaused(false);
+
+      if (songPausedByTimerRef.current && !songPausedByFadeRef.current) {
+        songPausedByTimerRef.current = false;
+        const track = resolvedPlaylist[trackIndex] ?? resolvedPlaylist[0];
+        if (track && /^https?:\/\//i.test(track.url)) {
+          setChallengeBaseVolume(currentChallenge?.audioVolume ?? 1);
+          void playSong(track.url);
+        }
+      }
     }
-  }, [isTimerPaused]);
+  }, [isTimerPaused, resolvedPlaylist, trackIndex, currentChallenge?.audioVolume]);
 
   const finishNight = useCallback(
     (finalCompleted: number, finalSkipped: number) => {
@@ -604,7 +625,8 @@ export function ChallengeScreen({
       setTensionLevel(0);
       setSongVolume(1);
     }
-    if (songIsPlaying) {
+    if (isSongPlayingNow() || songIsPlaying) {
+      songPausedByTimerRef.current = true;
       pauseSong();
     }
   };
@@ -619,6 +641,14 @@ export function ChallengeScreen({
     ) {
       endTimestampRef.current = Date.now() + pausedRemainingMsRef.current;
       setIsTimerPaused(false);
+    }
+    if (songPausedByTimerRef.current && !songPausedByFadeRef.current) {
+      songPausedByTimerRef.current = false;
+      const track = resolvedPlaylist[trackIndex] ?? resolvedPlaylist[0];
+      if (track && /^https?:\/\//i.test(track.url)) {
+        setChallengeBaseVolume(currentChallenge?.audioVolume ?? 1);
+        void playSong(track.url);
+      }
     }
   };
 
@@ -666,6 +696,16 @@ export function ChallengeScreen({
           } else if (hasTimer && !timerFinished) {
             e.preventDefault();
             handleTogglePauseTimer();
+          } else if (hasAudio) {
+            e.preventDefault();
+            if (isSongPlayingNow()) {
+              pauseSong();
+            } else {
+              const track = resolvedPlaylist[trackIndex] ?? resolvedPlaylist[0];
+              if (track && /^https?:\/\//i.test(track.url)) {
+                void playSong(track.url);
+              }
+            }
           }
         }
         return;
@@ -731,13 +771,16 @@ export function ChallengeScreen({
     goPreviousChallenge,
     handleStart,
     handleTogglePauseTimer,
+    hasAudio,
     hasStarted,
     hasTimer,
     isNextDisabled,
+    resolvedPlaylist,
     shortcutsOpen,
     showPolaroid,
     showStartArea,
     timerFinished,
+    trackIndex,
   ]);
 
   if (!currentChallenge) {
@@ -773,13 +816,24 @@ export function ChallengeScreen({
     : '';
   const inTensionOverlay = tensionSecond !== null;
 
+  const totalChallenges = deck.length;
+  const completedInRound = Math.min(totalChallenges, Math.max(0, completedCount));
+  const skippedInRound = Math.min(
+    Math.max(0, totalChallenges - completedInRound),
+    Math.max(0, skippedCount)
+  );
+  const completedRatio = totalChallenges > 0 ? completedInRound / totalChallenges : 0;
+  const progressedRatio =
+    totalChallenges > 0 ? (completedInRound + skippedInRound) / totalChallenges : 0;
+  const completedPercent = Math.round(completedRatio * 100);
+
   return (
     <motion.main
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
       transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-      className="relative z-10 min-h-[100dvh] lg:h-[100dvh] lg:overflow-hidden flex flex-col items-center px-4 sm:px-6 lg:px-10 pt-16 lg:pt-[54px] pb-6 lg:pb-3"
+      className="relative z-10 min-h-[100dvh] lg:h-[100dvh] lg:overflow-hidden flex flex-col items-center px-4 sm:px-6 lg:px-10 pt-16 lg:pt-[52px] pb-6 lg:pb-3"
     >
       {/* Heartbeat Ember/Red Edge Vignette during Final Seconds */}
       <AnimatePresence>
@@ -829,14 +883,14 @@ export function ChallengeScreen({
                   : { scale: 0.78, opacity: 0 }
               }
               transition={{ duration: 0.48, ease: [0.16, 1, 0.3, 1] }}
-              className="font-neon text-[10rem] sm:text-[14rem] leading-none tabular-nums select-none text-[#FF7A3D]"
+              className="font-challenge font-extrabold text-[10rem] sm:text-[14rem] leading-none tabular-nums select-none text-[#FF7A3D]"
               style={{
                 textShadow: candleMode
                   ? '0 0 24px rgba(255, 122, 61, 0.3)'
                   : '0 0 42px rgba(255, 77, 141, 0.48)',
               }}
             >
-              {tensionSecond}
+              {toArabicDigits(tensionSecond)}
             </motion.span>
           )}
         </AnimatePresence>
@@ -844,42 +898,126 @@ export function ChallengeScreen({
 
       {/* Centered Max-Width Stage (~1600px on wide screens) */}
       <div className="relative z-20 w-full max-w-[1600px] mx-auto flex-1 min-h-0 flex flex-col">
-        {/* Compact Header Bar */}
-        <div className="mb-3 lg:mb-[clamp(0.5rem,1.4vh,1rem)] flex items-center justify-between gap-4 px-1 shrink-0">
-          <button
-            type="button"
-            onClick={handleExit}
-            className="min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-medium text-[#F4E8D8]/85 hover:text-[#FF7A3D] hover:bg-white/5 inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A3D]"
-          >
-            <ArrowRight className="h-4 w-4" />
-            <span>الرئيسية</span>
-          </button>
+        {/* Compact Header Bar + Round Progress Bar */}
+        <div className="mb-2.5 lg:mb-[clamp(0.45rem,1.1vh,0.85rem)] flex flex-col gap-1.5 px-1 shrink-0">
+          <div className="flex items-center justify-between gap-4">
+            <button
+              type="button"
+              onClick={handleExit}
+              className="min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-medium text-[#F4E8D8]/85 hover:text-[#FF7A3D] hover:bg-white/5 inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A3D]"
+            >
+              <ArrowRight className="h-4 w-4" />
+              <span>الرئيسية</span>
+            </button>
 
-          <div className="flex items-center gap-2 text-xs sm:text-sm text-[#B98A9E] tabular-nums">
-            <span className="font-calligraphy text-lg sm:text-xl text-[#F4E8D8]">
-              {category.title}
-            </span>
-            <span aria-hidden="true">·</span>
-            <span>
-              {currentIndex + 1} / {deck.length}
-            </span>
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-[#B98A9E] tabular-nums">
+              <span className="font-calligraphy text-lg sm:text-xl text-[#F4E8D8]">
+                {category.title}
+              </span>
+              <span aria-hidden="true">·</span>
+              <span>
+                {toArabicDigits(currentIndex + 1)} / {toArabicDigits(totalChallenges)}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                playTapSound();
+                setShortcutsOpen(true);
+              }}
+              aria-label="اختصارات لوحة المفاتيح"
+              title="اختصارات لوحة المفاتيح (?)"
+              className="min-h-[44px] min-w-[44px] px-3 rounded-lg border border-[#B98A9E]/30 bg-[#1C0B24]/75 hover:border-[#FF4D8D]/65 text-[#F4E8D8] inline-flex items-center justify-center gap-1.5 text-xs font-bold transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D8D]"
+            >
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#FF4D8D]/50 bg-[#FF4D8D]/15 text-[#FF4D8D] text-xs font-bold leading-none">
+                ?
+              </span>
+              <span className="hidden sm:inline">اختصارات</span>
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              playTapSound();
-              setShortcutsOpen(true);
-            }}
-            aria-label="اختصارات لوحة المفاتيح"
-            title="اختصارات لوحة المفاتيح (?)"
-            className="min-h-[44px] min-w-[44px] px-3 rounded-lg border border-[#B98A9E]/30 bg-[#1C0B24]/75 hover:border-[#FF4D8D]/65 text-[#F4E8D8] inline-flex items-center justify-center gap-1.5 text-xs font-bold transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D8D]"
-          >
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#FF4D8D]/50 bg-[#FF4D8D]/15 text-[#FF4D8D] text-xs font-bold leading-none">
-              ?
-            </span>
-            <span className="hidden sm:inline">اختصارات</span>
-          </button>
+          {/* Round Completion Progress Bar */}
+          <div dir="rtl" className="w-full max-w-xl mx-auto">
+            <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs text-[#B98A9E] mb-1 px-0.5 tabular-nums">
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="text-[#F4E8D8]/90 font-semibold">
+                  تم الانتهاء من {toArabicDigits(completedInRound)} من أصل{' '}
+                  {toArabicDigits(totalChallenges)}
+                </span>
+                {skippedInRound > 0 && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span className="text-[#B98A9E]/85">
+                      تخطّي {toArabicDigits(skippedInRound)}
+                    </span>
+                  </>
+                )}
+              </div>
+              <span className="font-bold text-[#FF7A3D] shrink-0">
+                {toArabicDigits(completedPercent)}٪
+              </span>
+            </div>
+
+            <div
+              role="progressbar"
+              aria-label="تقدّم الجولة"
+              aria-valuemin={0}
+              aria-valuemax={totalChallenges}
+              aria-valuenow={completedInRound}
+              aria-valuetext={`تم الانتهاء من ${completedInRound} من أصل ${totalChallenges} تحديات`}
+              className="relative h-2 w-full rounded-full bg-[#120618]/90 border border-[#B98A9E]/25 overflow-hidden shadow-inner"
+            >
+              {/* Skipped + Completed footprint */}
+              {skippedInRound > 0 && (
+                <div
+                  aria-hidden="true"
+                  className={`absolute inset-0 origin-right bg-[#B98A9E]/35 ${
+                    prefersReducedMotion ? '' : 'transition-transform duration-300 ease-out'
+                  }`}
+                  style={{ transform: `scaleX(${progressedRatio})` }}
+                />
+              )}
+
+              {/* Completed challenges fill */}
+              <div
+                aria-hidden="true"
+                className={`relative z-10 h-full w-full origin-right rounded-full ${
+                  prefersReducedMotion ? '' : 'transition-transform duration-300 ease-out'
+                }`}
+                style={{
+                  transform: `scaleX(${completedRatio})`,
+                  background: 'linear-gradient(270deg, #FF4D8D 0%, #FF7A3D 100%)',
+                  boxShadow:
+                    completedRatio > 0
+                      ? '0 0 12px rgba(255, 77, 141, 0.5)'
+                      : 'none',
+                }}
+              />
+
+              {/* Subtle chapter divider ticks for rounds up to 20 challenges */}
+              {totalChallenges > 1 && totalChallenges <= 20 && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 z-20 grid"
+                  style={{
+                    gridTemplateColumns: `repeat(${totalChallenges}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {Array.from({ length: totalChallenges }).map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={
+                        idx < totalChallenges - 1
+                          ? 'border-l border-[#14081A]/65'
+                          : ''
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Wide Landscape Stage */}

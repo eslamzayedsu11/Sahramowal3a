@@ -149,19 +149,19 @@ export function PolaroidFrame({
   const shakeAmp = candleMode ? tensionLevel * 0.7 : tensionLevel * 1.3;
 
   const frameSizeClasses = previewMode
-    ? 'max-w-[230px]'
-    : 'max-w-[270px] sm:max-w-[300px] lg:max-w-[clamp(250px,34vh,410px)] xl:max-w-[clamp(290px,38vh,450px)]';
+    ? 'max-w-[250px]'
+    : 'max-w-[335px] sm:max-w-[385px] lg:max-w-[clamp(350px,52dvh,550px)] xl:max-w-[clamp(410px,56dvh,620px)]';
 
   const mediaBoxHeightClasses = previewMode
-    ? 'h-[170px]'
+    ? 'h-[190px]'
     : compactForTurntable
-      ? 'h-[195px] sm:h-[220px] lg:h-[clamp(145px,23dvh,305px)]'
-      : 'h-[205px] sm:h-[235px] lg:h-[clamp(185px,30dvh,340px)]';
+      ? 'h-[240px] sm:h-[275px] lg:h-[clamp(220px,37dvh,435px)]'
+      : 'h-[250px] sm:h-[290px] lg:h-[clamp(235px,39dvh,455px)]';
 
   return (
     <div
       className={`relative flex flex-col items-center select-none w-full ${
-        compactForTurntable ? 'pt-5 lg:pt-5' : 'pt-6 lg:pt-7'
+        compactForTurntable ? 'pt-4 lg:pt-4' : 'pt-5 lg:pt-5'
       }`}
     >
       {/* Subtle twine string segment behind the clothespin */}
@@ -378,7 +378,7 @@ export function PolaroidFrame({
             className="polaroid-3d-card relative w-full cursor-pointer rounded-[3px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D8D]"
           >
             {/* FRONT FACE */}
-            <div className="polaroid-face relative rounded-[3px] bg-[#F4E8D8] p-2.5 pb-7 sm:p-3 sm:pb-9 lg:p-3.5 lg:pb-10 shadow-[0_24px_44px_-12px_rgba(0,0,0,0.88),0_0_24px_rgba(255,122,61,0.14)] border border-[#B98A9E]/35">
+            <div className="polaroid-face relative rounded-[3px] bg-[#F4E8D8] p-2 pb-5 sm:p-2.5 sm:pb-6 lg:p-3 lg:pb-7 shadow-[0_24px_44px_-12px_rgba(0,0,0,0.88),0_0_24px_rgba(255,122,61,0.14)] border border-[#B98A9E]/35">
               <div
                 className={`relative w-full overflow-hidden bg-[#14081A] shadow-inner flex items-center justify-center ${mediaBoxHeightClasses}`}
               >
@@ -489,7 +489,7 @@ export function PolaroidFrame({
               </div>
 
               <div className="my-auto py-2 px-2 text-center overflow-y-auto scrapbook-scroll">
-                <p className="font-calligraphy text-[clamp(1.15rem,1.8vw,1.6rem)] font-bold text-[#1B0A22] leading-relaxed text-balance">
+                <p className="font-challenge text-[clamp(1.05rem,1.65vw,1.45rem)] font-bold text-[#1B0A22] leading-relaxed text-balance">
                   {displayCaption}
                 </p>
               </div>
